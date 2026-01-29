@@ -1,0 +1,48 @@
+{{ define "title" }}{{ .Title }} - Article | {{ .Site.Title }}{{ end }}
+
+{{ define "head" }}
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="{{ .Summary }}">
+{{ if .Params.tags }}
+<meta name="keywords" content="{{ delimit .Params.tags ", " }}">
+{{ end }}
+{{ end }}
+
+{{ define "main" }}
+<article>
+    <header>
+        <h1>{{ .Title }}</h1>
+        <time datetime="{{ .Date.Format "2006-01-02" }}">
+            {{ .Date.Format "January 2, 2006" }}
+        </time>
+    </header>
+    
+    <div class="content">
+        {{ .Content }}
+    </div>
+</article>
+{{ end }}
+
+{{ define "sidebar" }}
+<div class="article-sidebar">
+    {{ if .Params.tags }}
+    <div class="tags">
+        <h3>Tags</h3>
+        {{ range .Params.tags }}
+        <span class="tag">{{ . }}</span>
+        {{ end }}
+    </div>
+    {{ end }}
+    
+    {{ if .Params.related }}
+    <div class="related">
+        <h3>Related Articles</h3>
+        <ul>
+            {{ range .Params.related }}
+            <li><a href="{{ . }}">{{ . }}</a></li>
+            {{ end }}
+        </ul>
+    </div>
+    {{ end }}
+</div>
+{{ end }}

@@ -1,0 +1,3 @@
+{{ $classes := dict "info" "badge-info" "primary" "badge-primary" "count" "badge-count" "warning" "badge-warning" }}
+{{ $class := index $classes (.type | default "info") }}
+<span class="badge {{ $class }}">{{ .text | default "Badge" }}</span>

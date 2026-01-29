@@ -1,0 +1,16 @@
+<footer class="article-footer">
+    {{ if .context.Params.tags }}
+        {{ partial "meta/tags.html" (dict "tags" .context.Params.tags "style" "footer") }}
+    {{ end }}
+    
+    {{ if .showSharing }}
+        <div class="sharing-buttons">
+            {{ partial "shared/button.html" (dict "text" "Share on Twitter" "url" (printf "https://twitter.com/intent/tweet?url=%s&text=%s" .context.Permalink (.context.Title | urlize)) "style" "social" "icon" "twitter" "context" .context) }}
+            {{ partial "shared/button.html" (dict "text" "Share on LinkedIn" "url" (printf "https://linkedin.com/sharing/share-offsite/?url=%s" .context.Permalink) "style" "social" "icon" "linkedin" "context" .context) }}
+        </div>
+    {{ end }}
+    
+    {{ if .enableTracking }}
+        {{ partial "analytics/tracker.html" (dict "context" .context "event" "article_footer_view") }}
+    {{ end }}
+</footer>

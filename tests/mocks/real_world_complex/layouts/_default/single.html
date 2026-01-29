@@ -1,0 +1,13 @@
+{{ define "main" }}
+<article class="post {{ .Type }}">
+    {{ partial "article/header.html" (dict "context" . "style" "full" "showMeta" true) }}
+    
+    <div class="article-body">
+        {{ partial "article/content.html" (dict "context" . "enableTOC" (.Params.toc | default true) "layout" (.Params.layout | default "standard")) }}
+    </div>
+    
+    {{ if not .Params.hideFooter }}
+        {{ partial "article/footer.html" (dict "context" . "showSharing" true "enableTracking" .Site.Params.analytics.enabled) }}
+    {{ end }}
+</article>
+{{ end }}

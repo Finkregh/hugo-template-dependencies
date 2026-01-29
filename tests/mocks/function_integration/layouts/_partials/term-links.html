@@ -1,0 +1,12 @@
+<div class="term-links style-{{ .style | default "list" }}">
+    {{ range .terms }}
+    <div class="term-item">
+        <a href="{{ .URL }}" class="term-link">
+            {{ .Name }}
+            {{ if $.showCount }}
+            {{ partial "badge.html" (dict "text" (print .Count) "type" "count") }}
+            {{ end }}
+        </a>
+    </div>
+    {{ end }}
+</div>

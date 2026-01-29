@@ -1,0 +1,36 @@
+{{/* Reusable icon component with flexible styling */}}
+{{ $iconName := .name | default "default" }}
+{{ $iconClass := .class | default "icon" }}
+{{ $size := .size | default "16" }}
+
+{{/* SVG icon definitions - simplified for testing */}}
+{{ if eq $iconName "user" }}
+    <svg class="{{ $iconClass }}" width="{{ $size }}" height="{{ $size }}" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4z"/>
+    </svg>
+{{ else if eq $iconName "calendar" }}
+    <svg class="{{ $iconClass }}" width="{{ $size }}" height="{{ $size }}" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5z"/>
+    </svg>
+{{ else if eq $iconName "edit" }}
+    <svg class="{{ $iconClass }}" width="{{ $size }}" height="{{ $size }}" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10z"/>
+    </svg>
+{{ else if eq $iconName "tag" }}
+    <svg class="{{ $iconClass }}" width="{{ $size }}" height="{{ $size }}" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M2 1a1 1 0 0 0-1 1v4.586a1 1 0 0 0 .293.707l7 7a1 1 0 0 0 1.414 0l4.586-4.586a1 1 0 0 0 0-1.414l-7-7A1 1 0 0 0 6.586 1H2z"/>
+    </svg>
+{{ else if eq $iconName "folder" }}
+    <svg class="{{ $iconClass }}" width="{{ $size }}" height="{{ $size }}" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M.54 3.87L.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h4.672a2 2 0 0 1 2 2l-.54.87a1 1 0 0 1-.94.63H1.48a1 1 0 0 1-.94-.63z"/>
+    </svg>
+{{ else if eq $iconName "book" }}
+    <svg class="{{ $iconClass }}" width="{{ $size }}" height="{{ $size }}" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M1 2.828c.885-.37 2.154-.769 3.388-.893 1.33-.134 2.458.063 3.112.752v9.746c-.935-.53-2.12-.603-3.213-.493-1.18.12-2.37.461-3.287.811V2.828zm7.5-.141c.654-.689 1.782-.886 3.112-.752 1.234.124 2.503.523 3.388.893v9.923c-.918-.35-2.107-.692-3.287-.81-1.094-.111-2.278-.039-3.213.492V2.687z"/>
+    </svg>
+{{ else }}
+    {{/* Default fallback icon */}}
+    <svg class="{{ $iconClass }}" width="{{ $size }}" height="{{ $size }}" viewBox="0 0 16 16" fill="currentColor">
+        <circle cx="8" cy="8" r="7"/>
+    </svg>
+{{ end }}

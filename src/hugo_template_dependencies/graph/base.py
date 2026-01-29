@@ -40,6 +40,7 @@ class GraphBase(ABC):
         >>> graph.add_node("node1", "file", path="/path/to/file")
         >>> graph.add_node("node2", "file", path="/path/to/other")
         >>> graph.add_edge("node1", "node2", "includes")
+
     """
 
     def __init__(self) -> None:
@@ -56,6 +57,7 @@ class GraphBase(ABC):
             node_id: Unique identifier for node
             node_type: Type/category of node (e.g., 'file', 'repository')
             **attributes: Additional attributes to store with node
+
         """
 
     @abstractmethod
@@ -73,6 +75,7 @@ class GraphBase(ABC):
             target: Target node identifier
             relationship: Type of relationship (e.g., 'includes', 'depends_on')
             **attributes: Additional attributes to store with edge
+
         """
 
     def get_graph(self) -> nx.DiGraph:
@@ -80,6 +83,7 @@ class GraphBase(ABC):
 
         Returns:
             The NetworkX directed graph containing all nodes and edges
+
         """
         return self.graph
 
@@ -91,6 +95,7 @@ class GraphBase(ABC):
 
         Returns:
             List of node identifiers matching specified type
+
         """
         return [
             node_id
@@ -107,6 +112,7 @@ class GraphBase(ABC):
 
         Returns:
             A subgraph containing only nodes with the specified attribute value
+
         """
         nodes = [
             node_id
@@ -122,6 +128,7 @@ class GraphBase(ABC):
 
         Returns:
             Number of nodes in graph
+
         """
         return self.graph.number_of_nodes()
 
@@ -130,6 +137,7 @@ class GraphBase(ABC):
 
         Returns:
             Number of edges in graph
+
         """
         return self.graph.number_of_edges()
 
@@ -138,6 +146,7 @@ class GraphBase(ABC):
 
         Returns:
             True if graph contains cycles, False otherwise
+
         """
         return not nx.is_directed_acyclic_graph(self.graph)
 
@@ -146,6 +155,7 @@ class GraphBase(ABC):
 
         Returns:
             List of cycles, where each cycle is a list of node identifiers
+
         """
         try:
             return list(nx.simple_cycles(self.graph))
@@ -157,6 +167,7 @@ class GraphBase(ABC):
 
         Returns:
             Dictionary containing graph metadata
+
         """
         return self._metadata.copy()
 
@@ -166,5 +177,6 @@ class GraphBase(ABC):
         Args:
             key: Metadata key
             value: Metadata value
+
         """
         self._metadata[key] = value

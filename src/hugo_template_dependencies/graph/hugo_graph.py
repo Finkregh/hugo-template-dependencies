@@ -10,8 +10,15 @@ dependency graph showing relationships between Hugo template files across themes
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any
+from dataclasses import dataclass
+from enum import Enum
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+
+import networkx as nx
 
 from hugo_template_dependencies.graph.base import GraphBase
 
@@ -37,6 +44,7 @@ class HugoDependencyGraph(GraphBase):
         >> graph.add_template(template_file)
         >> graph.get_node_count()
         1
+
     """
 
     def __init__(self) -> None:
@@ -44,6 +52,43 @@ class HugoDependencyGraph(GraphBase):
         super().__init__()
         self.templates: dict[str, HugoTemplate] = {}
         self.modules: dict[str, HugoModule] = {}
+        self.replacement_mappings: dict[str, str] = (
+            {}
+        )  # replacement_path -> original_module
+
+    def set_replacement_mappings(self, replacements: dict[str, str]) -> None:
+        """Store Hugo module replacement mappings for display purposes.
+
+        Args:
+            replacements: Dictionary mapping original module paths to replacement paths
+
+        """
+        # Create reverse mapping: replacement_path -> original_module
+        self.replacement_mappings = {v: k for k, v in replacements.items()}
+
+    def get_display_name_for_source(self, source: str) -> str:
+        """Get user-friendly display name for a template source.
+
+        Args:
+            source: Source identifier (local, module path, or replacement path)
+
+        Returns:
+            User-friendly display name for the source
+
+        """
+        if source == "local":
+            return "Local Templates"
+        if source == "unknown":
+            return "Unknown Source"
+        if source in self.replacement_mappings:
+            # This is a replacement path like "../../.." - get original module name
+            original_module = self.replacement_mappings[source]
+            if "/" in original_module:
+                module_name = original_module.split("/")[-1]  # Extract basename
+                return f"Module: {module_name}"
+            return f"Module: {original_module}"
+        # Regular module path like golang.foundata.com/hugo-theme-dev
+        return f"Module: {source}"
 
     def add_node(self, node_id: str, node_type: str, **attributes: object) -> None:
         """Add a node to graph with Hugo specific attributes.
@@ -90,10 +135,11 @@ class HugoDependencyGraph(GraphBase):
         # Add template node
         self.add_node(
             template.node_id,
-            "template",
+            template.template_type.value,
             file_path=str(template.file_path),
             template_type=template.template_type.value,
             display_name=template.display_name,
+            source=template.source,
         )
 
         # Store template reference
@@ -207,6 +253,7 @@ class HugoDependencyGraph(GraphBase):
 
         Returns:
             List of HugoTemplate objects matching specified type
+
         """
         return [
             template
@@ -222,6 +269,7 @@ class HugoDependencyGraph(GraphBase):
 
         Returns:
             List of node IDs in dependency order
+
         """
         if start_template not in self.graph.nodes:
             return []
@@ -245,17 +293,75 @@ class HugoDependencyGraph(GraphBase):
         dfs(start_template)
         return chain
 
+    def get_dependency_cycles(self) -> list[list[str]]:
+        """Get all dependency cycles in the graph.
 
-# Data classes for Hugo templates and modules
-from dataclasses import dataclass
-from enum import Enum
+        Returns:
+            List of cycles, where each cycle is a list of node IDs
+
+        """
+        if not self.has_cycles():
+            return []
+
+        cycles = []
+        try:
+            # Use NetworkX cycle detection
+            cycles.extend(list(cycle) for cycle in nx.simple_cycles(self.graph))
+        except (nx.NetworkXError, ValueError, RuntimeError):
+            # Fallback: manual cycle detection for directed graph issues
+            cycles = self._detect_cycles_manually()
+
+        return cycles
+
+    def _detect_cycles_manually(self) -> list[list[str]]:
+        """Manually detect cycles using DFS approach.
+
+        Returns:
+            List of cycles, where each cycle is a list of node IDs
+
+        """
+        cycles = []
+        visited = set()
+        rec_stack = set()
+
+        def dfs(node: str, path: list[str]) -> None:
+            if node in rec_stack:
+                # Found a cycle
+                cycle_start = path.index(node)
+                cycle = [*path[cycle_start:], node]
+                cycles.append(cycle)
+                return
+
+            if node in visited:
+                return
+
+            visited.add(node)
+            rec_stack.add(node)
+            path.append(node)
+
+            # Follow include relationships
+            for successor in self.graph.successors(node):
+                edge_data = self.graph.edges[node, successor]
+                if edge_data.get("relationship") == "includes":
+                    dfs(successor, path.copy())
+
+            rec_stack.discard(node)
+
+        for node in self.graph.nodes():
+            if node not in visited:
+                dfs(node, [])
+
+        return cycles
 
 
 class TemplateType(Enum):
     """Hugo template types."""
 
-    LAYOUT = "layout"
+    TEMPLATE = "template"
     PARTIAL = "partial"
+    SHORTCODE = "shortcode"
+    # Legacy types - to be phased out
+    LAYOUT = "layout"
     SINGLE = "single"
     LIST = "list"
     BASEOF = "baseof"
@@ -270,6 +376,9 @@ class HugoTemplate:
     template_type: TemplateType
     content: str | None = None
     dependencies: list[Any] | None = None
+    source: str = (
+        "local"  # Source: "local" or module path like "golang.foundata.com/hugo-theme-dev"
+    )
 
     @property
     def node_id(self) -> str:
@@ -278,8 +387,34 @@ class HugoTemplate:
 
     @property
     def display_name(self) -> str:
-        """Get display name for this template."""
-        return self.file_path.name
+        """Display name showing relative path from layouts directory.
+
+        For files in layouts/, shows path relative to layouts/ directory.
+        For files outside layouts/, shows full relative path from project root.
+
+        Examples:
+            layouts/meetings/list.html → meetings/list.html
+            layouts/_default/single.html → _default/single.html
+            layouts/_partials/header.html → _partials/header.html
+            content/posts/example.md → content/posts/example.md
+
+        Returns:
+            String representing the display path for this template
+
+        """
+        # Find layouts directory in the path
+        try:
+            parts = self.file_path.parts
+            if "layouts" in parts:
+                layouts_index = parts.index("layouts")
+                # Return path relative to layouts directory
+                relative_parts = parts[layouts_index + 1 :]
+                return "/".join(relative_parts)
+            # File not in layouts, return relative path from project root
+            return str(self.file_path)
+        except (ValueError, IndexError):
+            # Fallback to current behavior for edge cases
+            return self.file_path.name
 
 
 @dataclass

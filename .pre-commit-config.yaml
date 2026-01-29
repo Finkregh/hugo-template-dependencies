@@ -1,4 +1,19 @@
 repos:
+  - local:
+  - id: doc8
+    name: doc8
+    description: This hook runs doc8 for linting docs
+    entry: python -m doc8
+    language: python
+    files: \.rst$
+    require_serial: true
+  - id: rstcheck
+    name: rstcheck
+    entry: rstcheck
+    language: python
+    types: [rst]
+    require_serial: true
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: "v6.0.0"
     hooks:

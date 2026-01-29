@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="{{ .Site.LanguageCode }}">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ block "title" . }}{{ .Title }} | {{ .Site.Title }}{{ end }}</title>
+    {{ block "head" . }}
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {{ end }}
+</head>
+<body>
+    <header>
+        {{ block "header" . }}
+        <h1>{{ .Site.Title }}</h1>
+        {{ end }}
+    </header>
+    
+    <main>
+        {{ block "main" . }}
+        <p>Default main content</p>
+        {{ end }}
+    </main>
+    
+    <aside>
+        {{ block "sidebar" . }}
+        <p>Default sidebar content</p>
+        {{ end }}
+    </aside>
+    
+    <footer>
+        {{ block "footer" . }}
+        <p>&copy; {{ now.Format "2006" }} {{ .Site.Title }}</p>
+        {{ end }}
+    </footer>
+</body>
+</html>

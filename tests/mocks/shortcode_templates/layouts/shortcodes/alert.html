@@ -1,0 +1,20 @@
+{{ $type := .Get "type" | default "info" }}
+{{ $title := .Get "title" }}
+{{ $dismissible := .Get "dismissible" | default false }}
+
+<div class="alert alert-{{ $type }}{{ if $dismissible }} alert-dismissible{{ end }}">
+    {{ if $title }}
+    <div class="alert-header">
+        {{ partial "icon.html" $type }}
+        <strong>{{ $title }}</strong>
+    </div>
+    {{ end }}
+    <div class="alert-body">
+        {{ .Inner | markdownify }}
+    </div>
+    {{ if $dismissible }}
+    <button type="button" class="alert-close" aria-label="Close">
+        {{ partial "icon.html" "close" }}
+    </button>
+    {{ end }}
+</div>

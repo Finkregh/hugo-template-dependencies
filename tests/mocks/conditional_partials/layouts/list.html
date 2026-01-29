@@ -1,0 +1,13 @@
+{{ define "main" }}
+{{ $layout := .Params.layout | default "card" }}
+{{ $partial := print $layout "-layout.html" }}
+{{ if templates.Exists (printf "partials/%s" $partial) }}
+    <div class="custom-layout">
+        {{ partial $partial . }}
+    </div>
+{{ else }}
+    <div class="fallback-layout">
+        {{ partial "default-layout.html" . }}
+    </div>
+{{ end }}
+{{ end }}
