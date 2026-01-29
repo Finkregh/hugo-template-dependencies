@@ -24,6 +24,8 @@ dependencies = [
     "rich>=13.0.0",
     "graphviz>=0.20.0",
     "click-default-group>=1.2.4",
+    "networkx>=3.4.2",
+    "jsonschema>=4.17.0",
 ]
 
 [project.urls]
@@ -46,6 +48,7 @@ dev = [
     "mkdocs-material>=9.7.1",
     "mkdocstrings[python]>=1.0.0",
     "types-toml>=0.10.8",
+    "uv>=0.9.27",
 ]
 
 [build-system]

@@ -13,6 +13,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+import networkx as nx
+
 from hugo_template_dependencies.graph.base import GraphBase
 
 
@@ -90,7 +92,7 @@ class HugoDependencyGraph(GraphBase):
         # Add template node
         self.add_node(
             template.node_id,
-            "template",
+            template.template_type.value,
             file_path=str(template.file_path),
             template_type=template.template_type.value,
             display_name=template.display_name,
@@ -208,11 +210,7 @@ class HugoDependencyGraph(GraphBase):
         Returns:
             List of HugoTemplate objects matching specified type
         """
-        return [
-            template
-            for template in self.templates.values()
-            if template.template_type.value == template_type
-        ]
+        return [template for template in self.templates.values() if template.template_type.value == template_type]
 
     def get_template_dependency_chain(self, start_template: str) -> list[str]:
         """Get dependency chain starting from a specific template.
@@ -245,6 +243,65 @@ class HugoDependencyGraph(GraphBase):
         dfs(start_template)
         return chain
 
+    def get_dependency_cycles(self) -> list[list[str]]:
+        """Get all dependency cycles in the graph.
+
+        Returns:
+            List of cycles, where each cycle is a list of node IDs
+        """
+        if not self.has_cycles():
+            return []
+
+        cycles = []
+        try:
+            # Use NetworkX cycle detection
+            for cycle in nx.simple_cycles(self.graph):
+                cycles.append(list(cycle))
+        except Exception:
+            # Fallback: manual cycle detection
+            cycles = self._detect_cycles_manually()
+
+        return cycles
+
+    def _detect_cycles_manually(self) -> list[list[str]]:
+        """Manually detect cycles using DFS approach.
+
+        Returns:
+            List of cycles, where each cycle is a list of node IDs
+        """
+        cycles = []
+        visited = set()
+        rec_stack = set()
+
+        def dfs(node: str, path: list[str]) -> None:
+            if node in rec_stack:
+                # Found a cycle
+                cycle_start = path.index(node)
+                cycle = path[cycle_start:] + [node]
+                cycles.append(cycle)
+                return
+
+            if node in visited:
+                return
+
+            visited.add(node)
+            rec_stack.add(node)
+            path.append(node)
+
+            # Follow include relationships
+            for successor in self.graph.successors(node):
+                edge_data = self.graph.edges[node, successor]
+                if edge_data.get("relationship") == "includes":
+                    dfs(successor, path.copy())
+
+            rec_stack.discard(node)
+
+        for node in self.graph.nodes():
+            if node not in visited:
+                dfs(node, [])
+
+        return cycles
+
 
 # Data classes for Hugo templates and modules
 from dataclasses import dataclass
@@ -260,6 +317,7 @@ class TemplateType(Enum):
     LIST = "list"
     BASEOF = "baseof"
     INDEX = "index"
+    SHORTCODE = "shortcode"
 
 
 @dataclass
