@@ -6,9 +6,10 @@ into Mermaid diagram format for visualization.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from hugo_template_dependencies.graph.base import GraphBase
+if TYPE_CHECKING:
+    from hugo_template_dependencies.graph.base import GraphBase
 
 
 class MermaidFormatter:
@@ -23,6 +24,7 @@ class MermaidFormatter:
 
         Args:
             graph: The dependency graph to format
+
         """
         self.graph = graph
 
@@ -39,7 +41,9 @@ class MermaidFormatter:
 
         Returns:
             Mermaid diagram string
+
         """
+        # Add ELK layout configuration for better rendering
         mermaid_lines = [f"graph {direction}"]
 
         # Add nodes with proper labeling
@@ -64,6 +68,7 @@ class MermaidFormatter:
 
         Returns:
             List of formatted node definitions
+
         """
         nodes = []
 
@@ -73,7 +78,7 @@ class MermaidFormatter:
 
             # Style nodes based on type
             style = self._get_node_style(node_type)
-            nodes.append(f'    {self._sanitize_id(node_id)}["{label}"]{style}')
+            nodes.append(f'    {self._sanitize_id(node_id, data)}["{label}"]{style}')
 
         return nodes
 
@@ -82,6 +87,7 @@ class MermaidFormatter:
 
         Returns:
             List of formatted edge definitions
+
         """
         edges = []
 
@@ -89,8 +95,12 @@ class MermaidFormatter:
             relationship = data.get("relationship", "depends on")
             edge_label = self._get_edge_label(relationship)
 
-            source_id = self._sanitize_id(source)
-            target_id = self._sanitize_id(target)
+            # Get node data for proper sanitization
+            source_data = self.graph.graph.nodes.get(source, {})
+            target_data = self.graph.graph.nodes.get(target, {})
+
+            source_id = self._sanitize_id(source, source_data)
+            target_id = self._sanitize_id(target, target_data)
 
             if edge_label:
                 edges.append(f"    {source_id} -->|{edge_label}| {target_id}")
@@ -100,33 +110,83 @@ class MermaidFormatter:
         return edges
 
     def _get_subgraphs(self) -> list[str]:
-        """Get formatted subgraph definitions by node type.
+        """Get formatted subgraph definitions by template source.
 
         Returns:
-            List of formatted subgraph definitions
+            List of formatted subgraph definitions grouped by source
+
         """
+        from collections import defaultdict
+
         subgraphs = []
-        node_types = {}
+        source_groups = defaultdict(list)
 
-        # Group nodes by type
+        # Group nodes by source
         for node_id, data in self.graph.graph.nodes(data=True):
-            node_type = data.get("type", "unknown")
-            if node_type not in node_types:
-                node_types[node_type] = []
-            node_types[node_type].append(node_id)
+            source = data.get("source", "unknown")
+            source_groups[source].append((node_id, data))
 
-        # Create subgraphs for each type
-        for node_type, nodes in node_types.items():
-            if len(nodes) > 1:  # Only create subgraph if multiple nodes
-                subgraphs.append(f'    subgraph "{node_type.title()}"')
-                for node_id in nodes:
-                    sanitized_id = self._sanitize_id(node_id)
-                    subgraphs.append(f"        {sanitized_id}")
-                subgraphs.append("    end")
+        # Create subgraphs for each source
+        for source, nodes in source_groups.items():
+            if len(source_groups) <= 1:
+                # Skip subgraphs if there's only one source
+                break
+
+            # Format source name for display
+            # Try to get display name from HugoDependencyGraph if available
+            try:
+                from hugo_template_dependencies.graph.hugo_graph import HugoDependencyGraph
+
+                if isinstance(self.graph, HugoDependencyGraph):
+                    source_display = self.graph.get_display_name_for_source(source)
+                else:
+                    raise AttributeError  # Use fallback
+            except (AttributeError, ImportError):
+                # Fallback for graphs without replacement support
+                if source == "local":
+                    source_display = "Local Templates"
+                elif source == "unknown":
+                    source_display = "Unknown Source"
+                else:
+                    source_display = f"Module: {source}"
+
+            # Create meaningful subgraph ID based on display name
+            try:
+                from hugo_template_dependencies.graph.hugo_graph import HugoDependencyGraph
+
+                if isinstance(self.graph, HugoDependencyGraph):
+                    display_name = self.graph.get_display_name_for_source(source)
+                    # Extract module name from "Module: hugo-theme-component-ical"
+                    if display_name.startswith("Module: "):
+                        module_name = display_name[8:]  # Remove "Module: " prefix
+                        subgraph_id = self._sanitize_id(module_name, None)
+                    elif display_name == "Local Templates":
+                        subgraph_id = "local_templates"
+                    else:
+                        subgraph_id = self._sanitize_id(source, None)
+                else:
+                    subgraph_id = self._sanitize_id(f"source_{source}", None)
+            except (AttributeError, ImportError):
+                subgraph_id = self._sanitize_id(f"source_{source}", None)
+            subgraphs.append(f'    subgraph {subgraph_id} ["{source_display}"]')
+
+            # Add nodes to subgraph
+            for node_id, data in nodes:
+                sanitized_id = self._sanitize_id(node_id, data)
+                subgraphs.append(f"        {sanitized_id}")
+
+            # End subgraph
+            subgraphs.append("    end")
+            subgraphs.append("")  # Add blank line for readability
 
         return subgraphs
 
-    def _get_node_label(self, node_id: str, data: dict[str, Any], include_metadata: bool) -> str:
+    def _get_node_label(
+        self,
+        node_id: str,
+        data: dict[str, Any],
+        include_metadata: bool,
+    ) -> str:
         """Get label for a node.
 
         Args:
@@ -136,6 +196,7 @@ class MermaidFormatter:
 
         Returns:
             Formatted node label
+
         """
         display_name = data.get("display_name", node_id)
 
@@ -160,6 +221,7 @@ class MermaidFormatter:
 
         Returns:
             Style string for node
+
         """
         styles = {
             "template": ":::template",
@@ -178,6 +240,7 @@ class MermaidFormatter:
 
         Returns:
             Label string for edge (without pipes)
+
         """
         labels = {
             "includes": "includes",
@@ -187,50 +250,139 @@ class MermaidFormatter:
         }
         return labels.get(relationship, "")
 
-    def _sanitize_id(self, node_id: str) -> str:
+    def _sanitize_id(self, node_id: str, node_data: dict[str, Any] | None = None) -> str:
         """Sanitize node ID for Mermaid compatibility.
 
-        Creates shorter, more readable IDs by extracting filename
-        and ensuring uniqueness.
+        Creates meaningful IDs by extracting relative path context with source prefixes:
+        - For local templates: "local_" prefix (e.g., "local_baseof")
+        - For module templates: module name prefix (e.g., "hugo_theme_dev_baseof")
+
+        Examples:
+            "/path/to/layouts/meetings/single.html" → "local_meetings_single" (if local)
+            "/module/layouts/_partials/header.html" → "theme_partials_header" (if module)
 
         Args:
             node_id: Original node identifier (often a full file path)
+            node_data: Optional node data containing source information
 
         Returns:
-            Sanitized node ID
+            Sanitized node ID with source prefix and meaningful path context
+
         """
         import os
+        from pathlib import Path
 
-        # Extract filename from path
-        if "/" in node_id:
-            filename = os.path.basename(node_id)
-        else:
-            filename = node_id
+        # Handle module node IDs that start with "module:"
+        if node_id.startswith("module:"):
+            module_path = node_id[7:]  # Remove "module:" prefix
+            # Extract module name (last part of path)
+            if "/" in module_path:
+                module_name = module_path.split("/")[-1]
+            else:
+                module_name = module_path
+            # Sanitize module name
+            sanitized = module_name.replace("-", "_").replace(".", "_")
+            return f"mod_{sanitized}"
+
+        # Handle block node IDs that start with "block:"
+        if node_id.startswith("block:"):
+            block_name = node_id[6:]  # Remove "block:" prefix
+            sanitized = block_name.replace("-", "_").replace(" ", "_")
+            return f"blk_{sanitized}"
+
+        # Extract source information
+        source_prefix = "local"
+        if node_data:
+            source = node_data.get("source", "local")
+            if source == "local":
+                source_prefix = "local"
+            else:
+                # Try to use graph's method to get proper display name, handling replacements
+                # Check if this is a HugoDependencyGraph with the method we need
+                if hasattr(self.graph, "get_display_name_for_source"):
+                    try:
+                        display_name = self.graph.get_display_name_for_source(source)  # type: ignore[attr-defined]
+                        if display_name.startswith("Module: "):
+                            # Extract module name from "Module: hugo-theme-dev" format
+                            module_name = display_name[8:]  # Remove "Module: " prefix
+                        else:
+                            module_name = source
+                    except Exception:
+                        # Fallback if method fails
+                        module_name = source
+                else:
+                    # Fallback: extract from source path
+                    if "/" in source:
+                        module_name = source.split("/")[-1]
+                    else:
+                        module_name = source
+
+                # Sanitize module name
+                source_prefix = module_name.replace("-", "_").replace(".", "_")
+
+        # For template files, extract meaningful path
+        meaningful_path = None
+        try:
+            path_obj = Path(node_id)
+            parts = list(path_obj.parts)  # Convert to list for easier manipulation
+
+            # Find layouts directory to get relative path
+            if "layouts" in parts:
+                layouts_index = parts.index("layouts")
+                # Get path relative to layouts directory
+                relative_parts = parts[layouts_index + 1 :]
+                if relative_parts:
+                    meaningful_path = "/".join(relative_parts)
+                else:
+                    meaningful_path = path_obj.name
+            else:
+                # Fallback: use just the filename with parent directory for context
+                if len(parts) >= 2:
+                    meaningful_path = f"{parts[-2]}/{parts[-1]}"
+                else:
+                    meaningful_path = path_obj.name
+
+        except (ValueError, IndexError):
+            meaningful_path = node_id
+
+        # Ensure we have a meaningful path
+        if meaningful_path is None:
+            meaningful_path = node_id
 
         # Remove file extension for cleaner display
-        if "." in filename:
-            filename = os.path.splitext(filename)[0]
+        if "." in meaningful_path:
+            meaningful_path = os.path.splitext(meaningful_path)[0]
 
-        # Replace problematic characters and make it a valid identifier
-        sanitized = filename.replace("-", "_").replace(" ", "_")
-        sanitized = sanitized.replace("(", "").replace(")", "")
-        sanitized = sanitized.replace("[", "").replace("]", "")
+        # Replace path separators and problematic characters
+        sanitized_path = meaningful_path.replace("/", "_").replace("\\", "_")
+        sanitized_path = sanitized_path.replace("-", "_").replace(" ", "_")
+        sanitized_path = sanitized_path.replace("(", "").replace(")", "")
+        sanitized_path = sanitized_path.replace("[", "").replace("]", "")
+        sanitized_path = sanitized_path.replace(":", "_").replace("@", "_")
 
-        # Ensure it starts with a letter
-        if sanitized and sanitized[0].isdigit():
-            sanitized = f"n_{sanitized}"
+        # Handle leading underscores from paths like "_partials/file"
+        while sanitized_path.startswith("_"):
+            sanitized_path = sanitized_path[1:]
+
+        # Combine source prefix with path
+        full_id = f"{source_prefix}_{sanitized_path}"
+
+        # Ensure it starts with a letter or underscore
+        if full_id and full_id[0].isdigit():
+            full_id = f"n_{full_id}"
 
         # Handle edge cases
-        if not sanitized or sanitized.isspace():
-            sanitized = "unknown_node"
+        if not full_id or full_id.isspace():
+            full_id = f"{source_prefix}_unknown"
 
-        return sanitized
+        return full_id
 
     def format_with_styles(self) -> str:
         """Format graph with CSS style definitions.
 
         Returns:
             Complete Mermaid diagram with styling
+
         """
         # Add ELK layout directive at the beginning
         elk_directive = """%%{
@@ -242,12 +394,19 @@ class MermaidFormatter:
 """
 
         mermaid_content = self.format_graph(include_metadata=False)
-
+        legend = """
+    subgraph Legend
+        Template:::template
+        Partial:::partial
+        block:::block
+        module:::block
+    end
+"""
         styles = """
-classDef template fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-classDef partial fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+classDef template fill:#00af00,stroke:#01579b,stroke-width:2px
+classDef partial fill:#af0000,stroke:#4a148c,stroke-width:2px
 classDef block fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
 classDef module fill:#fff3e0,stroke:#e65100,stroke-width:2px
 """
 
-        return f"{elk_directive}{mermaid_content}\n{styles}"
+        return f"{elk_directive}{mermaid_content}\n{legend}{styles}"

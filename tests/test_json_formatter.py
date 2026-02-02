@@ -18,27 +18,57 @@ class MockGraph(GraphBase):
         super().__init__()
         # Add some test data
         self.graph.add_node(
-            "template1", type="template", display_name="Template 1", file_path="/path/to/template1.html"
+            "template1",
+            type="template",
+            display_name="Template 1",
+            file_path="/path/to/template1.html",
         )
-        self.graph.add_node("template2", type="partial", display_name="Partial 1", file_path="/path/to/partial1.html")
-        self.graph.add_node("block1", type="block", display_name="Block 1", block_name="content")
+        self.graph.add_node(
+            "template2",
+            type="partial",
+            display_name="Partial 1",
+            file_path="/path/to/partial1.html",
+        )
+        self.graph.add_node(
+            "block1", type="block", display_name="Block 1", block_name="content",
+        )
 
         self.graph.add_edge(
-            "template1", "template2", relationship="includes", line_number=5, context='{{ partial "partial1.html" . }}'
+            "template1",
+            "template2",
+            relationship="includes",
+            line_number=5,
+            context='{{ partial "partial1.html" . }}',
         )
-        self.graph.add_edge("template1", "block1", relationship="defines", line_number=10)
+        self.graph.add_edge(
+            "template1", "block1", relationship="defines", line_number=10,
+        )
 
         self._nodes = {
-            "template1": {"type": "template", "display_name": "Template 1", "file_path": "/path/to/template1.html"},
-            "template2": {"type": "partial", "display_name": "Partial 1", "file_path": "/path/to/partial1.html"},
-            "block1": {"type": "block", "display_name": "Block 1", "block_name": "content"},
+            "template1": {
+                "type": "template",
+                "display_name": "Template 1",
+                "file_path": "/path/to/template1.html",
+            },
+            "template2": {
+                "type": "partial",
+                "display_name": "Partial 1",
+                "file_path": "/path/to/partial1.html",
+            },
+            "block1": {
+                "type": "block",
+                "display_name": "Block 1",
+                "block_name": "content",
+            },
         }
 
     def add_node(self, node_id: str, node_type: str, **attributes: object) -> None:
         """Add a node to mock graph."""
         self.graph.add_node(node_id, type=node_type, **attributes)
 
-    def add_edge(self, source: str, target: str, relationship: str, **attributes: object) -> None:
+    def add_edge(
+        self, source: str, target: str, relationship: str, **attributes: object,
+    ) -> None:
         """Add an edge to mock graph."""
         self.graph.add_edge(source, target, relationship=relationship, **attributes)
 
@@ -168,7 +198,9 @@ class TestJSONFormatter:
         assert result["valid"] is True
         assert len(result["errors"]) == 0
 
-    def test_validate_json_schema_missing_fields(self, json_formatter: JSONFormatter) -> None:
+    def test_validate_json_schema_missing_fields(
+        self, json_formatter: JSONFormatter,
+    ) -> None:
         """Test JSON schema validation with missing required fields."""
         invalid_data = {
             "schema_version": "1.0",
@@ -182,7 +214,9 @@ class TestJSONFormatter:
         assert len(result["errors"]) > 0
         assert any("edges" in error for error in result["errors"])
 
-    def test_validate_json_schema_invalid_nodes(self, json_formatter: JSONFormatter) -> None:
+    def test_validate_json_schema_invalid_nodes(
+        self, json_formatter: JSONFormatter,
+    ) -> None:
         """Test JSON schema validation with invalid nodes."""
         invalid_data = {
             "schema_version": "1.0",
@@ -198,7 +232,9 @@ class TestJSONFormatter:
         assert len(result["errors"]) > 0
         assert any("id" in error for error in result["errors"])
 
-    def test_validate_json_schema_orphaned_edges(self, json_formatter: JSONFormatter) -> None:
+    def test_validate_json_schema_orphaned_edges(
+        self, json_formatter: JSONFormatter,
+    ) -> None:
         """Test JSON schema validation with edges referencing non-existent nodes."""
         data_with_orphans = {
             "schema_version": "1.0",
@@ -206,7 +242,11 @@ class TestJSONFormatter:
                 {"id": "node1", "type": "template", "name": "Node 1"},
             ],
             "edges": [
-                {"source": "node1", "target": "nonexistent", "relationship": "includes"},
+                {
+                    "source": "node1",
+                    "target": "nonexistent",
+                    "relationship": "includes",
+                },
             ],
             "metadata": {
                 "generator": "hugo-deps",
@@ -227,7 +267,9 @@ class TestJSONFormatter:
         with tempfile.TemporaryDirectory() as temp_dir:
             file_path = Path(temp_dir) / "output.json"
 
-            json_formatter.save_to_file(file_path, format_type="simple", validate_output=False)
+            json_formatter.save_to_file(
+                file_path, format_type="simple", validate_output=False,
+            )
 
             assert file_path.exists()
 
@@ -244,7 +286,9 @@ class TestJSONFormatter:
         with tempfile.TemporaryDirectory() as temp_dir:
             file_path = Path(temp_dir) / "output.json"
 
-            json_formatter.save_to_file(file_path, format_type="detailed", validate_output=True)
+            json_formatter.save_to_file(
+                file_path, format_type="detailed", validate_output=True,
+            )
 
             assert file_path.exists()
 
@@ -265,7 +309,9 @@ class TestJSONFormatter:
             with pytest.raises(ValueError, match="Invalid format_type"):
                 json_formatter.save_to_file(file_path, format_type="invalid")
 
-    def test_save_to_file_with_validation_failure(self, json_formatter: JSONFormatter) -> None:
+    def test_save_to_file_with_validation_failure(
+        self, json_formatter: JSONFormatter,
+    ) -> None:
         """Test saving with validation failure."""
         # Mock the format method to return invalid JSON
         json_formatter.format_detailed = Mock(return_value="{invalid json")
@@ -274,7 +320,9 @@ class TestJSONFormatter:
             file_path = Path(temp_dir) / "output.json"
 
             with pytest.raises(ValueError, match="Generated JSON is invalid"):
-                json_formatter.save_to_file(file_path, format_type="detailed", validate_output=True)
+                json_formatter.save_to_file(
+                    file_path, format_type="detailed", validate_output=True,
+                )
 
     def test_get_graph_statistics(self, json_formatter: JSONFormatter) -> None:
         """Test graph statistics generation."""

@@ -10,14 +10,16 @@ from __future__ import annotations
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 try:
     import jsonschema
 except ImportError:
     jsonschema = None
 
-from hugo_template_dependencies.graph.base import GraphBase
+
+if TYPE_CHECKING:
+    from hugo_template_dependencies.graph.base import GraphBase
 
 
 class JSONFormatter:
@@ -72,7 +74,13 @@ class JSONFormatter:
                         "target": {"type": "string"},
                         "relationship": {
                             "type": "string",
-                            "enum": ["includes", "defines", "uses", "depends on", "extends"],
+                            "enum": [
+                                "includes",
+                                "defines",
+                                "uses",
+                                "depends on",
+                                "extends",
+                            ],
                         },
                         "metadata": {"type": "object"},
                     },
@@ -99,6 +107,7 @@ class JSONFormatter:
 
         Args:
             graph: The dependency graph to format
+
         """
         self.graph = graph
         self._schema_validator = None
@@ -106,7 +115,9 @@ class JSONFormatter:
         # Initialize schema validator if jsonschema is available
         if jsonschema is not None:
             try:
-                self._schema_validator = jsonschema.Draft7Validator(self.HUGO_JSON_SCHEMA)
+                self._schema_validator = jsonschema.Draft7Validator(
+                    self.HUGO_JSON_SCHEMA,
+                )
             except Exception:
                 self._schema_validator = None
 
@@ -125,6 +136,7 @@ class JSONFormatter:
 
         Returns:
             JSON string representing the graph
+
         """
         graph_data: dict[str, Any] = {
             "schema_version": schema_version,
@@ -152,6 +164,7 @@ class JSONFormatter:
 
         Returns:
             Simplified JSON string with just nodes and edges
+
         """
         simple_data: dict[str, Any] = {
             "nodes": [
@@ -184,6 +197,7 @@ class JSONFormatter:
 
         Returns:
             Detailed JSON string with complete node and edge information
+
         """
         return self.format_graph(
             include_metadata=True,
@@ -201,6 +215,7 @@ class JSONFormatter:
 
         Returns:
             Validation result with errors and warnings
+
         """
         errors = []
         warnings = []
@@ -209,10 +224,15 @@ class JSONFormatter:
         if self._schema_validator is not None:
             try:
                 # Validate against schema
-                validation_errors = sorted(self._schema_validator.iter_errors(json_data), key=lambda e: e.path)
+                validation_errors = sorted(
+                    self._schema_validator.iter_errors(json_data),
+                    key=lambda e: e.path,
+                )
                 for error in validation_errors:
                     error_path = " -> ".join(str(p) for p in error.path) if error.path else "root"
-                    errors.append(f"Schema validation error at '{error_path}': {error.message}")
+                    errors.append(
+                        f"Schema validation error at '{error_path}': {error.message}",
+                    )
             except Exception as e:
                 errors.append(f"Schema validation failed: {e}")
         else:
@@ -236,6 +256,7 @@ class JSONFormatter:
 
         Returns:
             List of validation errors
+
         """
         errors = []
 
@@ -295,6 +316,7 @@ class JSONFormatter:
 
         Returns:
             List of warnings
+
         """
         warnings = []
 
@@ -305,9 +327,13 @@ class JSONFormatter:
                 source = edge.get("source")
                 target = edge.get("target")
                 if source and source not in node_ids:
-                    warnings.append(f"Edge {i} references non-existent source node: {source}")
+                    warnings.append(
+                        f"Edge {i} references non-existent source node: {source}",
+                    )
                 if target and target not in node_ids:
-                    warnings.append(f"Edge {i} references non-existent target node: {target}")
+                    warnings.append(
+                        f"Edge {i} references non-existent target node: {target}",
+                    )
 
         return warnings
 
@@ -316,6 +342,7 @@ class JSONFormatter:
 
         Returns:
             Dictionary containing Hugo-specific metadata
+
         """
         base_metadata = self.graph.get_metadata()
 
@@ -348,6 +375,7 @@ class JSONFormatter:
         Raises:
             ValueError: If format_type is invalid or validation fails
             OSError: If file cannot be written
+
         """
         # Generate JSON based on format type
         try:
@@ -356,11 +384,18 @@ class JSONFormatter:
             elif format_type == "detailed":
                 json_output = self.format_detailed()
             elif format_type == "custom":
-                json_output = self.format_graph(include_metadata=True, include_statistics=False)
+                json_output = self.format_graph(
+                    include_metadata=True,
+                    include_statistics=False,
+                )
             else:
-                raise ValueError(f"Invalid format_type: {format_type}. Use 'simple', 'detailed', or 'custom'")
+                msg = f"Invalid format_type: {format_type}. Use 'simple', 'detailed', or 'custom'"
+                raise ValueError(
+                    msg,
+                )
         except Exception as e:
-            raise ValueError(f"Failed to generate JSON output: {e}")
+            msg = f"Failed to generate JSON output: {e}"
+            raise ValueError(msg)
 
         # Validate output if requested
         if validate_output:
@@ -377,7 +412,8 @@ class JSONFormatter:
                             error_msg += f"  - {warning}\n"
                     raise ValueError(error_msg.rstrip())
             except json.JSONDecodeError as e:
-                raise ValueError(f"Generated JSON is invalid: {e}")
+                msg = f"Generated JSON is invalid: {e}"
+                raise ValueError(msg)
 
         # Write to file with error handling
         try:
@@ -385,7 +421,8 @@ class JSONFormatter:
             with file_path.open("w", encoding="utf-8") as f:
                 f.write(json_output)
         except OSError as e:
-            raise OSError(f"Failed to write JSON to file {file_path}: {e}")
+            msg = f"Failed to write JSON to file {file_path}: {e}"
+            raise OSError(msg)
 
     def _get_formatted_nodes(self, include_metadata: bool) -> list[dict[str, Any]]:
         """Get formatted node data for JSON output.
@@ -395,6 +432,7 @@ class JSONFormatter:
 
         Returns:
             List of formatted node objects
+
         """
         nodes = []
 
@@ -403,6 +441,7 @@ class JSONFormatter:
                 "id": node_id,
                 "type": data.get("type", "unknown"),
                 "name": data.get("display_name", node_id),
+                "source": data.get("source", "unknown"),  # Add source information
             }
 
             if include_metadata:
@@ -410,7 +449,12 @@ class JSONFormatter:
                 metadata = {}
 
                 # Standard Hugo template metadata
-                hugo_fields = ["file_path", "template_type", "line_number", "content_type"]
+                hugo_fields = [
+                    "file_path",
+                    "template_type",
+                    "line_number",
+                    "content_type",
+                ]
                 for field in hugo_fields:
                     if field in data:
                         value = data[field]
@@ -421,7 +465,7 @@ class JSONFormatter:
 
                 # Add all additional attributes as metadata
                 for key, value in data.items():
-                    if key not in ["type", "display_name"] + hugo_fields:
+                    if key not in ["type", "display_name", *hugo_fields]:
                         # Convert Path objects to strings for JSON serialization
                         if isinstance(value, Path):
                             metadata[key] = str(value)
@@ -446,6 +490,7 @@ class JSONFormatter:
 
         Returns:
             List of formatted edge objects
+
         """
         edges = []
 
@@ -468,7 +513,7 @@ class JSONFormatter:
 
                 # Add all additional attributes as metadata
                 for key, value in data.items():
-                    if key not in ["relationship"] + hugo_fields:
+                    if key not in ["relationship", *hugo_fields]:
                         if isinstance(value, Path):
                             metadata[key] = str(value)
                         else:
@@ -486,6 +531,7 @@ class JSONFormatter:
 
         Returns:
             Dictionary containing graph statistics
+
         """
         stats = {
             "total_nodes": self.graph.get_node_count(),

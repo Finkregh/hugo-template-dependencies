@@ -26,6 +26,7 @@ from rich.progress import (
 )
 from rich.table import Table
 from rich.text import Text
+from typing_extensions import Self
 
 
 class AnalysisPhase(Enum):
@@ -91,12 +92,15 @@ class AnalysisStats:
 class ProgressReporter:
     """Enhanced progress reporter with rich UI and statistics."""
 
-    def __init__(self, console: Console | None = None, show_progress: bool = True) -> None:
+    def __init__(
+        self, console: Console | None = None, show_progress: bool = True,
+    ) -> None:
         """Initialize progress reporter.
 
         Args:
             console: Rich console for output
             show_progress: Whether to show progress bars
+
         """
         self.console = console or Console()
         self.show_progress = show_progress
@@ -123,6 +127,7 @@ class ProgressReporter:
 
         Args:
             total_files: Total number of files to process
+
         """
         self.stats.total_files = total_files
         self.stats.start_time = time.time()
@@ -140,6 +145,7 @@ class ProgressReporter:
         Args:
             phase: New analysis phase
             description: Optional phase description
+
         """
         self.current_phase = phase
 
@@ -153,6 +159,7 @@ class ProgressReporter:
 
         Args:
             file_path: Path of the current file being processed
+
         """
         if self.show_progress and self.progress and "main" in self.tasks:
             # Convert to relative path if possible for cleaner display
@@ -165,7 +172,9 @@ class ProgressReporter:
                     file_path = file_path.name
 
             # Update progress description with current file
-            self.progress.update(self.tasks["main"], description=f"📄 Processing: {file_path}")
+            self.progress.update(
+                self.tasks["main"], description=f"📄 Processing: {file_path}",
+            )
 
     def update_file_progress(self, processed: int, total: int | None = None) -> None:
         """Update file processing progress.
@@ -173,6 +182,7 @@ class ProgressReporter:
         Args:
             processed: Number of files processed
             total: Total number of files (optional)
+
         """
         self.stats.processed_files = processed
         if total is not None:
@@ -190,6 +200,7 @@ class ProgressReporter:
 
         Args:
             increment: Number of files to increment by
+
         """
         self.stats.processed_files += increment
 
@@ -202,6 +213,7 @@ class ProgressReporter:
         Args:
             total: Total number of dependencies found
             resolved: Number of dependencies resolved
+
         """
         self.stats.total_dependencies = total
         self.stats.resolved_dependencies = resolved
@@ -212,6 +224,7 @@ class ProgressReporter:
         Args:
             nodes: Number of nodes in graph
             edges: Number of edges in graph
+
         """
         self.stats.total_nodes = nodes
         self.stats.total_edges = edges
@@ -222,6 +235,7 @@ class ProgressReporter:
         Args:
             errors: Number of errors
             warnings: Number of warnings
+
         """
         self.stats.errors = errors
         self.stats.warnings = warnings
@@ -236,6 +250,7 @@ class ProgressReporter:
 
         Returns:
             Task ID for the subtask
+
         """
         if self.show_progress and self.progress:
             task_id = self.progress.add_task(description, total=total)
@@ -243,13 +258,16 @@ class ProgressReporter:
             return task_id
         return TaskID(0)  # Dummy ID when progress is disabled
 
-    def update_subtask(self, name: str, completed: int, total: int | None = None) -> None:
+    def update_subtask(
+        self, name: str, completed: int, total: int | None = None,
+    ) -> None:
         """Update subtask progress.
 
         Args:
             name: Subtask name
             completed: Number of items completed
             total: Total number of items (optional)
+
         """
         if self.show_progress and self.progress and name in self.tasks:
             self.progress.update(self.tasks[name], completed=completed, total=total)
@@ -259,6 +277,7 @@ class ProgressReporter:
 
         Args:
             name: Subtask name
+
         """
         if self.show_progress and self.progress and name in self.tasks:
             # Mark as complete by setting completed to total
@@ -268,21 +287,35 @@ class ProgressReporter:
 
     def print_statistics(self) -> None:
         """Print current analysis statistics."""
-        table = Table(title="Analysis Statistics", show_header=True, header_style="bold magenta")
+        table = Table(
+            title="Analysis Statistics", show_header=True, header_style="bold magenta",
+        )
 
         table.add_column("Metric", style="cyan", width=25)
         table.add_column("Value", style="white", width=15)
         table.add_column("Rate", style="green", width=15)
 
         # File statistics
-        table.add_row("Files Processed", f"{self.stats.processed_files:,}", f"{self.stats.completion_percentage:.1f}%")
+        table.add_row(
+            "Files Processed",
+            f"{self.stats.processed_files:,}",
+            f"{self.stats.completion_percentage:.1f}%",
+        )
         table.add_row("Total Files", f"{self.stats.total_files:,}", "")
 
         # Dependency statistics
         if self.stats.total_dependencies > 0:
-            dep_percentage = (self.stats.resolved_dependencies / self.stats.total_dependencies) * 100
-            table.add_row("Dependencies Resolved", f"{self.stats.resolved_dependencies:,}", f"{dep_percentage:.1f}%")
-            table.add_row("Total Dependencies", f"{self.stats.total_dependencies:,}", "")
+            dep_percentage = (
+                self.stats.resolved_dependencies / self.stats.total_dependencies
+            ) * 100
+            table.add_row(
+                "Dependencies Resolved",
+                f"{self.stats.resolved_dependencies:,}",
+                f"{dep_percentage:.1f}%",
+            )
+            table.add_row(
+                "Total Dependencies", f"{self.stats.total_dependencies:,}", "",
+            )
 
         # Graph statistics
         if self.stats.total_nodes > 0:
@@ -295,7 +328,11 @@ class ProgressReporter:
             table.add_row("Warnings", f"{self.stats.warnings:,}", "yellow")
 
         # Performance statistics
-        table.add_row("Elapsed Time", f"{self.stats.elapsed_time:.1f}s", f"{self.stats.files_per_second:.1f} files/s")
+        table.add_row(
+            "Elapsed Time",
+            f"{self.stats.elapsed_time:.1f}s",
+            f"{self.stats.files_per_second:.1f} files/s",
+        )
 
         if self.stats.processed_files < self.stats.total_files:
             remaining = self.stats.estimated_remaining_time
@@ -313,9 +350,12 @@ class ProgressReporter:
         summary_text.append("Analysis Complete!\n\n", style="bold green")
 
         summary_text.append(
-            f"Files Processed: {self.stats.processed_files:,}/{self.stats.total_files:,}\n", style="white"
+            f"Files Processed: {self.stats.processed_files:,}/{self.stats.total_files:,}\n",
+            style="white",
         )
-        summary_text.append(f"Dependencies Found: {self.stats.total_dependencies:,}\n", style="white")
+        summary_text.append(
+            f"Dependencies Found: {self.stats.total_dependencies:,}\n", style="white",
+        )
         summary_text.append(f"Graph Nodes: {self.stats.total_nodes:,}\n", style="white")
         summary_text.append(f"Graph Edges: {self.stats.total_edges:,}\n", style="white")
 
@@ -323,15 +363,19 @@ class ProgressReporter:
             summary_text.append(f"\nErrors: {self.stats.errors:,}\n", style="red")
             summary_text.append(f"Warnings: {self.stats.warnings:,}\n", style="yellow")
 
-        summary_text.append(f"\nTotal Time: {self.stats.elapsed_time:.1f}s\n", style="white")
-        summary_text.append(f"Processing Rate: {self.stats.files_per_second:.1f} files/s", style="green")
+        summary_text.append(
+            f"\nTotal Time: {self.stats.elapsed_time:.1f}s\n", style="white",
+        )
+        summary_text.append(
+            f"Processing Rate: {self.stats.files_per_second:.1f} files/s", style="green",
+        )
 
         self.console.print(
             Panel(
                 summary_text,
                 title="[bold green]Analysis Summary[/]",
                 border_style="green",
-            )
+            ),
         )
 
     def cancel(self) -> None:
@@ -339,7 +383,7 @@ class ProgressReporter:
         if self.show_progress and self.progress:
             self.progress.stop()
 
-    def __enter__(self) -> ProgressReporter:
+    def __enter__(self) -> Self:
         """Context manager entry."""
         if self.show_progress and self.progress:
             self.progress.start()
@@ -353,7 +397,9 @@ class ProgressReporter:
     def _create_main_task(self) -> None:
         """Create main progress task."""
         if self.show_progress and self.progress:
-            task_id = self.progress.add_task("Analyzing Hugo templates...", total=self.stats.total_files)
+            task_id = self.progress.add_task(
+                "Analyzing Hugo templates...", total=self.stats.total_files,
+            )
             self.tasks["main"] = task_id
 
     def _print_phase_header(self, description: str) -> None:
@@ -361,6 +407,7 @@ class ProgressReporter:
 
         Args:
             description: Phase description
+
         """
         if not self.show_progress:
             return
@@ -378,6 +425,7 @@ class CancellableProgress:
 
         Args:
             reporter: Base progress reporter
+
         """
         self.reporter = reporter
         self._cancelled = False
@@ -396,7 +444,8 @@ class CancellableProgress:
     def check_cancellation(self) -> None:
         """Check for cancellation and raise if cancelled."""
         if self._cancelled:
-            raise KeyboardInterrupt("Analysis was cancelled")
+            msg = "Analysis was cancelled"
+            raise KeyboardInterrupt(msg)
 
     def update_file_progress(self, processed: int, total: int | None = None) -> None:
         """Update file progress with cancellation check."""

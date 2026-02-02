@@ -8,9 +8,12 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from hugo_template_dependencies.graph.hugo_graph import HugoTemplate, TemplateType
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 @dataclass
@@ -52,10 +55,16 @@ class HugoTemplateParser:
         # Enhanced regex patterns for comprehensive Hugo template functions
         # Using more robust patterns that handle optional whitespace and various formats
         self.patterns = {
-            # Core template functions
-            "partial": re.compile(r'{{\s*-?\s*partial\s+"([^"]+)"\s*([^}]*?)\s*-?\s*}}'),
-            "template": re.compile(r'{{\s*-?\s*template\s+"([^"]+)"\s*([^}]*?)\s*-?\s*}}'),
-            "include": re.compile(r'{{\s*-?\s*include\s+"([^"]+)"\s*([^}]*?)\s*-?\s*}}'),
+            # Core template functions - Fixed to handle := variable assignments
+            "partial": re.compile(
+                r'{{\s*-?\s*(?:\$\w+\s*:?=\s*)?partial\s+"([^"]+)"\s*([^}]*?)\s*-?\s*}}',
+            ),
+            "template": re.compile(
+                r'{{\s*-?\s*(?:\$\w+\s*:?=\s*)?template\s+"([^"]+)"\s*([^}]*?)\s*-?\s*}}',
+            ),
+            "include": re.compile(
+                r'{{\s*-?\s*(?:\$\w+\s*:?=\s*)?include\s+"([^"]+)"\s*([^}]*?)\s*-?\s*}}',
+            ),
             # Block definitions and usage with improved multiline support
             "block_def": re.compile(
                 r'{{\s*-?\s*define\s+"([^"]+)"\s*-?\s*}}(.*?){{\s*-?\s*end\s*-?\s*}}',
@@ -135,7 +144,7 @@ class HugoTemplateParser:
 
         try:
             # Create parsing context for accurate tracking
-            parse_context = ParseContext(content=content)
+            ParseContext(content=content)
 
             # Remove comments to avoid false dependencies (Parse Don't Validate)
             content_no_comments = self._remove_comments_enhanced(content)
@@ -147,7 +156,9 @@ class HugoTemplateParser:
             dependencies.extend(self._extract_templates_enhanced(content_no_comments))
             dependencies.extend(self._extract_includes_enhanced(content_no_comments))
             dependencies.extend(self._extract_blocks_enhanced(content_no_comments))
-            dependencies.extend(self._extract_control_flow_dependencies(content_no_comments))
+            dependencies.extend(
+                self._extract_control_flow_dependencies(content_no_comments),
+            )
 
             return dependencies
 
@@ -238,6 +249,7 @@ class HugoTemplateParser:
 
         Returns:
             List of partial dependencies with enhanced metadata
+
         """
         partials = []
 
@@ -252,14 +264,16 @@ class HugoTemplateParser:
             # Check if this partial is inside conditional block
             is_conditional = self._is_in_conditional_block(content, match.start())
 
-            partials.append({
-                "type": "partial",
-                "target": partial_name,
-                "line_number": line_number,
-                "context": context,
-                "parameters": partial_params,
-                "is_conditional": is_conditional,
-            })
+            partials.append(
+                {
+                    "type": "partial",
+                    "target": partial_name,
+                    "line_number": line_number,
+                    "context": context,
+                    "parameters": partial_params,
+                    "is_conditional": is_conditional,
+                },
+            )
 
         return partials
 
@@ -271,6 +285,7 @@ class HugoTemplateParser:
 
         Returns:
             List of template dependencies with enhanced metadata
+
         """
         templates = []
 
@@ -285,14 +300,16 @@ class HugoTemplateParser:
             # Check if this template is inside conditional block
             is_conditional = self._is_in_conditional_block(content, match.start())
 
-            templates.append({
-                "type": "template",
-                "target": template_name,
-                "line_number": line_number,
-                "context": context,
-                "parameters": template_params,
-                "is_conditional": is_conditional,
-            })
+            templates.append(
+                {
+                    "type": "template",
+                    "target": template_name,
+                    "line_number": line_number,
+                    "context": context,
+                    "parameters": template_params,
+                    "is_conditional": is_conditional,
+                },
+            )
 
         return templates
 
@@ -304,6 +321,7 @@ class HugoTemplateParser:
 
         Returns:
             List of include dependencies with enhanced metadata
+
         """
         includes = []
 
@@ -318,14 +336,16 @@ class HugoTemplateParser:
             # Check if this include is inside conditional block
             is_conditional = self._is_in_conditional_block(content, match.start())
 
-            includes.append({
-                "type": "include",
-                "target": include_name,
-                "line_number": line_number,
-                "context": context,
-                "parameters": include_params,
-                "is_conditional": is_conditional,
-            })
+            includes.append(
+                {
+                    "type": "include",
+                    "target": include_name,
+                    "line_number": line_number,
+                    "context": context,
+                    "parameters": include_params,
+                    "is_conditional": is_conditional,
+                },
+            )
 
         return includes
 
@@ -337,6 +357,7 @@ class HugoTemplateParser:
 
         Returns:
             List of block dependencies with enhanced metadata
+
         """
         blocks = []
 
@@ -349,14 +370,16 @@ class HugoTemplateParser:
             context = self._get_enhanced_context(content, match.start(), match.end())
             is_conditional = self._is_in_conditional_block(content, match.start())
 
-            blocks.append({
-                "type": "block_definition",
-                "target": block_name,
-                "line_number": line_number,
-                "context": context,
-                "is_conditional": is_conditional,
-                "block_content": block_content.strip() if block_content else "",
-            })
+            blocks.append(
+                {
+                    "type": "block_definition",
+                    "target": block_name,
+                    "line_number": line_number,
+                    "context": context,
+                    "is_conditional": is_conditional,
+                    "block_content": block_content.strip() if block_content else "",
+                },
+            )
 
         # Extract block usage with enhanced tracking
         for match in self.patterns["block_use"].finditer(content):
@@ -368,15 +391,17 @@ class HugoTemplateParser:
             context = self._get_enhanced_context(content, match.start(), match.end())
             is_conditional = self._is_in_conditional_block(content, match.start())
 
-            blocks.append({
-                "type": "block_usage",
-                "target": block_name,
-                "line_number": line_number,
-                "context": context,
-                "is_conditional": is_conditional,
-                "parameters": block_params,
-                "block_content": block_content.strip() if block_content else "",
-            })
+            blocks.append(
+                {
+                    "type": "block_usage",
+                    "target": block_name,
+                    "line_number": line_number,
+                    "context": context,
+                    "is_conditional": is_conditional,
+                    "parameters": block_params,
+                    "block_content": block_content.strip() if block_content else "",
+                },
+            )
 
         return blocks
 
@@ -388,6 +413,7 @@ class HugoTemplateParser:
 
         Returns:
             List of control flow dependencies
+
         """
         control_flows = []
 
@@ -397,13 +423,15 @@ class HugoTemplateParser:
             line_number = self._get_accurate_line_number(content, match.start())
             context = self._get_enhanced_context(content, match.start(), match.end())
 
-            control_flows.append({
-                "type": "range",
-                "target": range_expr,
-                "line_number": line_number,
-                "context": context,
-                "is_conditional": False,  # range itself creates conditional context
-            })
+            control_flows.append(
+                {
+                    "type": "range",
+                    "target": range_expr,
+                    "line_number": line_number,
+                    "context": context,
+                    "is_conditional": False,  # range itself creates conditional context
+                },
+            )
 
         # Extract if statements
         for match in self.patterns["if"].finditer(content):
@@ -411,13 +439,18 @@ class HugoTemplateParser:
             line_number = self._get_accurate_line_number(content, match.start())
             context = self._get_enhanced_context(content, match.start(), match.end())
 
-            control_flows.append({
-                "type": "if",
-                "target": if_expr,
-                "line_number": line_number,
-                "context": context,
-                "is_conditional": self._is_in_conditional_block(content, match.start()),
-            })
+            control_flows.append(
+                {
+                    "type": "if",
+                    "target": if_expr,
+                    "line_number": line_number,
+                    "context": context,
+                    "is_conditional": self._is_in_conditional_block(
+                        content,
+                        match.start(),
+                    ),
+                },
+            )
 
         # Extract with statements
         for match in self.patterns["with"].finditer(content):
@@ -425,13 +458,18 @@ class HugoTemplateParser:
             line_number = self._get_accurate_line_number(content, match.start())
             context = self._get_enhanced_context(content, match.start(), match.end())
 
-            control_flows.append({
-                "type": "with",
-                "target": with_expr,
-                "line_number": line_number,
-                "context": context,
-                "is_conditional": self._is_in_conditional_block(content, match.start()),
-            })
+            control_flows.append(
+                {
+                    "type": "with",
+                    "target": with_expr,
+                    "line_number": line_number,
+                    "context": context,
+                    "is_conditional": self._is_in_conditional_block(
+                        content,
+                        match.start(),
+                    ),
+                },
+            )
 
         return control_flows
 
@@ -448,7 +486,13 @@ class HugoTemplateParser:
         """
         return content[:position].count("\n") + 1
 
-    def _get_enhanced_context(self, content: str, start: int, end: int, context_chars: int = 80) -> str:
+    def _get_enhanced_context(
+        self,
+        content: str,
+        start: int,
+        end: int,
+        context_chars: int = 80,
+    ) -> str:
         """Get enhanced context around a match with better formatting.
 
         Args:
@@ -522,37 +566,46 @@ class HugoTemplateParser:
         # we're inside a conditional block
         return openings_before > closings_before
 
-    def _determine_template_type(self, file_path: Path) -> TemplateType:
-        """Determine template type based on file path and name.
+    @staticmethod
+    def _determine_template_type(file_path: Path) -> TemplateType:
+        """Determine template type based on Hugo's official classification system.
+
+        Hugo Template Classification Rules:
+        - Files in layouts/ (not in special subdirs) → TEMPLATE
+        - Files in layouts/_partials/ or layouts/partials/ → PARTIAL
+        - Files in layouts/_shortcodes/ → SHORTCODE
+
+        NO special classification for baseof.html, index.html, single.html, list.html
+        - These are all regular templates with naming conventions
 
         Args:
-            file_path: Path to template file
+            file_path: Path to the template file
 
         Returns:
-            TemplateType enum value
-
+            TemplateType enum value for mermaid styling and graph classification
         """
-        name = file_path.name.lower()
-        parent_dir = file_path.parent.name.lower()
-
-        # Check if file is under _partials directory (including nested subdirs)
+        # Check for partials directory (both _partials and partials supported)
         is_partial = "_partials" in file_path.parts or "partials" in file_path.parts
 
-        if name == "baseof.html":
-            return TemplateType.BASEOF
-        if name == "index.html":
-            return TemplateType.INDEX
-        if is_partial or name.startswith("_"):
-            return TemplateType.PARTIAL
-        if parent_dir in ["_shortcodes", "shortcodes"]:
-            return TemplateType.SHORTCODE
-        if name.startswith("single"):
-            return TemplateType.SINGLE
-        if name.startswith("list"):
-            return TemplateType.LIST
-        return TemplateType.LAYOUT
+        # Check for shortcodes directory
+        is_shortcode = "_shortcodes" in file_path.parts or "shortcodes" in file_path.parts
 
-    def _get_context(self, content: str, start: int, end: int, context_chars: int = 50) -> str:
+        if is_partial:
+            return TemplateType.PARTIAL
+        elif is_shortcode:
+            return TemplateType.SHORTCODE
+        else:
+            # All files in layouts/ (not in special subdirs) are regular templates
+            # This includes baseof.html, home.html, single.html, list.html, etc.
+            return TemplateType.TEMPLATE
+
+    def _get_context(
+        self,
+        content: str,
+        start: int,
+        end: int,
+        context_chars: int = 50,
+    ) -> str:
         """Get context around a match for debugging.
 
         Args:

@@ -6,9 +6,10 @@ into DOT format for Graphviz visualization and rendering.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from hugo_template_dependencies.graph.base import GraphBase
+if TYPE_CHECKING:
+    from hugo_template_dependencies.graph.base import GraphBase
 
 
 class DOTFormatter:
@@ -23,6 +24,7 @@ class DOTFormatter:
 
         Args:
             graph: The dependency graph to format
+
         """
         self.graph = graph
 
@@ -45,6 +47,7 @@ class DOTFormatter:
 
         Returns:
             DOT format string
+
         """
         dot_lines = []
 
@@ -88,6 +91,7 @@ class DOTFormatter:
 
         Returns:
             Simple DOT format string
+
         """
         return self.format_graph(
             include_subgraphs=False,
@@ -99,6 +103,7 @@ class DOTFormatter:
 
         Returns:
             Clustered DOT format string
+
         """
         return self.format_graph(
             include_subgraphs=True,
@@ -119,6 +124,7 @@ class DOTFormatter:
         Raises:
             ValueError: If format_type is invalid
             OSError: If file cannot be written
+
         """
         # Generate DOT based on format type
         if format_type == "simple":
@@ -128,7 +134,10 @@ class DOTFormatter:
         elif format_type == "custom":
             dot_output = self.format_graph(include_subgraphs=True, include_styles=False)
         else:
-            raise ValueError(f"Invalid format_type: {format_type}. Use 'simple', 'clustered', or 'custom'")
+            msg = f"Invalid format_type: {format_type}. Use 'simple', 'clustered', or 'custom'"
+            raise ValueError(
+                msg,
+            )
 
         # Write to file
         with open(file_path, "w", encoding="utf-8") as f:
@@ -142,6 +151,7 @@ class DOTFormatter:
 
         Returns:
             List of formatted node definitions
+
         """
         nodes = []
 
@@ -168,20 +178,25 @@ class DOTFormatter:
 
         Returns:
             List of formatted edge definitions
+
         """
         edges = []
 
         for source, target, data in self.graph.graph.edges(data=True):
             relationship = data.get("relationship", "depends on")
 
+            # Get node data for proper sanitization
+            source_data = self.graph.graph.nodes.get(source, {})
+            target_data = self.graph.graph.nodes.get(target, {})
+
+            source_id = self._sanitize_id(source, source_data)
+            target_id = self._sanitize_id(target, target_data)
+
             if include_styles:
                 attributes = self._get_edge_attributes(relationship, data)
                 attributes_str = f" [{attributes}]" if attributes else ""
             else:
                 attributes_str = f' [label="{relationship}"]'
-
-            source_id = self._sanitize_id(source)
-            target_id = self._sanitize_id(target)
 
             edges.append(f"    {source_id} -> {target_id}{attributes_str};")
 
@@ -195,6 +210,7 @@ class DOTFormatter:
 
         Returns:
             List of subgraph definitions, each as a list of lines
+
         """
         subgraphs = []
         node_groups = {}
@@ -246,7 +262,7 @@ class DOTFormatter:
                 if include_styles:
                     # Use appropriate style based on group type
                     subgraph_style = self._get_cluster_style_for_group(group_key)
-                    subgraph_lines.append(f"        style = filled;")
+                    subgraph_lines.append("        style = filled;")
                     fillcolor = subgraph_style.split('fillcolor="')[1].split('"')[0]
                     subgraph_lines.append(f'        fillcolor = "{fillcolor}";')
 
@@ -254,12 +270,12 @@ class DOTFormatter:
                 for node_id, data in group_data["nodes"]:
                     node_type = data.get("type", "unknown")
                     label = self._get_node_label(node_id, data)
+                    sanitized_id = self._sanitize_id(node_id, data)
                     if include_styles:
                         attributes = self._get_node_attributes(node_type, data)
                         attributes_str = f" [{attributes}]" if attributes else ""
                     else:
                         attributes_str = f' [label="{label}"]'
-                    sanitized_id = self._sanitize_id(node_id)
                     subgraph_lines.append(f"        {sanitized_id}{attributes_str};")
 
                 subgraph_lines.append("    }")
@@ -275,16 +291,32 @@ class DOTFormatter:
             data: Node data
 
         Returns:
-            Formatted node label
+            Formatted node label with source information
+
         """
         display_name = data.get("display_name", node_id)
+        source = data.get("source", "unknown")
 
-        # Only include file path if display_name is explicitly provided and different
+        # Create base label
+        label_parts = [display_name]
+
+        # Add source information (unless it's local)
+        if source not in {"local", "unknown"}:
+            # For module paths, show just the module name
+            if "/" in source:
+                module_name = source.split("/")[-1]  # e.g., hugo-theme-dev
+                label_parts.append(f"(from: {module_name})")
+            else:
+                label_parts.append(f"(from: {source})")
+        elif source == "local":
+            label_parts.append("(local)")
+
+        # Add file path if different from display name
         file_path = data.get("file_path")
         if "display_name" in data and file_path and str(file_path) != display_name:
-            return f"{display_name}\\n{file_path}"
+            label_parts.append(str(file_path))
 
-        return display_name
+        return "\\n".join(label_parts)
 
     def _get_node_attributes(self, node_type: str, data: dict[str, Any]) -> str:
         """Get DOT attributes for a node based on its type.
@@ -295,6 +327,7 @@ class DOTFormatter:
 
         Returns:
             DOT attributes string
+
         """
         node_id = data.get("id", "")
         label = self._get_node_label(node_id, data)
@@ -324,6 +357,7 @@ class DOTFormatter:
 
         Returns:
             DOT attributes string
+
         """
         attributes = [f'label="{relationship}"']
 
@@ -339,7 +373,7 @@ class DOTFormatter:
             attributes.append(f'xlabel="L{data["line_number"]}"')
 
         # Add tooltip if context is available
-        if "context" in data:
+        if "context" in data and data["context"]:
             context = data["context"][:50] + "..." if len(data["context"]) > 50 else data["context"]
             attributes.append(f'tooltip="{context}"')
 
@@ -353,26 +387,82 @@ class DOTFormatter:
 
         Returns:
             List of style attributes
+
         """
         styles = {
             # Layout templates - box shape with blue tint
-            "layout": ["shape=box", "style=filled", 'fillcolor="#E6F3FF"', 'color="#4A90E2"'],
-            "baseof": ["shape=box", "style=filled", 'fillcolor="#E6F3FF"', 'color="#4A90E2"'],
-            "single": ["shape=box", "style=filled", 'fillcolor="#E6F3FF"', 'color="#4A90E2"'],
-            "list": ["shape=box", "style=filled", 'fillcolor="#E6F3FF"', 'color="#4A90E2"'],
-            "index": ["shape=box", "style=filled", 'fillcolor="#E6F3FF"', 'color="#4A90E2"'],
+            "layout": [
+                "shape=box",
+                "style=filled",
+                'fillcolor="#E6F3FF"',
+                'color="#4A90E2"',
+            ],
+            "baseof": [
+                "shape=box",
+                "style=filled",
+                'fillcolor="#E6F3FF"',
+                'color="#4A90E2"',
+            ],
+            "single": [
+                "shape=box",
+                "style=filled",
+                'fillcolor="#E6F3FF"',
+                'color="#4A90E2"',
+            ],
+            "list": [
+                "shape=box",
+                "style=filled",
+                'fillcolor="#E6F3FF"',
+                'color="#4A90E2"',
+            ],
+            "index": [
+                "shape=box",
+                "style=filled",
+                'fillcolor="#E6F3FF"',
+                'color="#4A90E2"',
+            ],
             # Partial templates - ellipse shape with red tint
-            "partial": ["shape=ellipse", "style=filled", 'fillcolor="#FFE6E6"', 'color="#E24A4A"'],
+            "partial": [
+                "shape=ellipse",
+                "style=filled",
+                'fillcolor="#FFE6E6"',
+                'color="#E24A4A"',
+            ],
             # Shortcode templates - diamond shape with green tint
-            "shortcode": ["shape=diamond", "style=filled", 'fillcolor="#E6FFE6"', 'color="#4AE24A"'],
+            "shortcode": [
+                "shape=diamond",
+                "style=filled",
+                'fillcolor="#E6FFE6"',
+                'color="#4AE24A"',
+            ],
             # Block definitions - diamond shape with green tint
-            "block": ["shape=diamond", "style=filled", 'fillcolor="#E8F5E8"', 'color="#2E7D32"'],
+            "block": [
+                "shape=diamond",
+                "style=filled",
+                'fillcolor="#E8F5E8"',
+                'color="#2E7D32"',
+            ],
             # Module imports - folder shape with orange tint
-            "module": ["shape=folder", "style=filled", 'fillcolor="#FFF3E0"', 'color="#E65100"'],
+            "module": [
+                "shape=folder",
+                "style=filled",
+                'fillcolor="#FFF3E0"',
+                'color="#E65100"',
+            ],
             # Generic template fallback
-            "template": ["shape=box", "style=filled", 'fillcolor="#e1f5fe"', 'color="#01579b"'],
+            "template": [
+                "shape=box",
+                "style=filled",
+                'fillcolor="#e1f5fe"',
+                'color="#01579b"',
+            ],
             # Unknown type
-            "unknown": ["shape=box", "style=filled", 'fillcolor="#f5f5f5"', 'color="#616161"'],
+            "unknown": [
+                "shape=box",
+                "style=filled",
+                'fillcolor="#f5f5f5"',
+                'color="#616161"',
+            ],
         }
         return styles.get(node_type, styles["template"])
 
@@ -384,6 +474,7 @@ class DOTFormatter:
 
         Returns:
             List of style attributes
+
         """
         styles = {
             "includes": ['color="#2196f3"', "style=solid", "arrowhead=normal"],
@@ -404,6 +495,7 @@ class DOTFormatter:
 
         Returns:
             Subgraph style string
+
         """
         styles = {
             # Layout templates cluster
@@ -435,6 +527,7 @@ class DOTFormatter:
 
         Returns:
             Subgraph style string
+
         """
         styles = {
             "layouts": 'filled, fillcolor="#E6F3FF"',
@@ -450,6 +543,7 @@ class DOTFormatter:
 
         Returns:
             List of global style definitions
+
         """
         return [
             "    // Global settings",
@@ -460,33 +554,129 @@ class DOTFormatter:
             "    // Default attributes are set in graph header",
         ]
 
-    def _sanitize_id(self, node_id: str) -> str:
+    def _sanitize_id(self, node_id: str, node_data: dict[str, Any] | None = None) -> str:
         """Sanitize node ID for DOT compatibility.
+
+        Creates meaningful IDs by extracting relative path context with source prefixes:
+        - For local templates: "local_" prefix (e.g., "local_baseof")
+        - For module templates: module name prefix (e.g., "hugo_theme_dev_baseof")
 
         Args:
             node_id: Original node identifier
+            node_data: Optional node data containing source information
 
         Returns:
-            Sanitized node ID
+            Sanitized node ID with source prefix and meaningful path context
+
         """
+        import os
+        from pathlib import Path
+
+        # Handle module node IDs that start with "module:"
+        if node_id.startswith("module:"):
+            module_path = node_id[7:]  # Remove "module:" prefix
+            # Extract module name (last part of path)
+            if "/" in module_path:
+                module_name = module_path.split("/")[-1]
+            else:
+                module_name = module_path
+            # Sanitize module name
+            sanitized = module_name.replace("-", "_").replace(".", "_")
+            return f"mod_{sanitized}"
+
+        # Handle block node IDs that start with "block:"
+        if node_id.startswith("block:"):
+            block_name = node_id[6:]  # Remove "block:" prefix
+            sanitized = block_name.replace("-", "_").replace(" ", "_")
+            return f"blk_{sanitized}"
+
+        # Extract source information
+        source_prefix = "local"
+        if node_data:
+            source = node_data.get("source", "local")
+            if source == "local":
+                source_prefix = "local"
+            else:
+                # Try to use graph's method to get proper display name, handling replacements
+                # Check if this is a HugoDependencyGraph with the method we need
+                if hasattr(self.graph, "get_display_name_for_source"):
+                    try:
+                        display_name = self.graph.get_display_name_for_source(source)  # type: ignore[attr-defined]
+                        if display_name.startswith("Module: "):
+                            # Extract module name from "Module: hugo-theme-dev" format
+                            module_name = display_name[8:]  # Remove "Module: " prefix
+                        else:
+                            module_name = source
+                    except Exception:
+                        # Fallback if method fails
+                        module_name = source
+                else:
+                    # Fallback: extract from source path
+                    if "/" in source:
+                        module_name = source.split("/")[-1]
+                    else:
+                        module_name = source
+
+                # Sanitize module name
+                source_prefix = module_name.replace("-", "_").replace(".", "_")
+
         # Store original first character check before replacement
         starts_with_dash = node_id.startswith("-")
 
-        # Replace problematic characters
-        sanitized = node_id.replace("/", "_").replace(".", "_").replace("-", "_")
-        sanitized = sanitized.replace(" ", "_").replace("(", "").replace(")", "")
-        sanitized = sanitized.replace(":", "_").replace("@", "_")
+        # For template files, extract meaningful path
+        meaningful_path = None
+        try:
+            path_obj = Path(node_id)
+            parts = list(path_obj.parts)  # Convert to list for easier manipulation
+
+            # Find layouts directory to get relative path
+            if "layouts" in parts:
+                layouts_index = parts.index("layouts")
+                # Get path relative to layouts directory
+                relative_parts = parts[layouts_index + 1 :]
+                if relative_parts:
+                    meaningful_path = "/".join(relative_parts)
+                else:
+                    meaningful_path = path_obj.name
+            else:
+                # Fallback: use just the filename with parent directory for context
+                if len(parts) >= 2:
+                    meaningful_path = f"{parts[-2]}/{parts[-1]}"
+                else:
+                    meaningful_path = path_obj.name
+
+        except (ValueError, IndexError):
+            meaningful_path = node_id
+
+        # Ensure we have a meaningful path
+        if meaningful_path is None:
+            meaningful_path = node_id
+
+        # Remove file extension for cleaner display
+        if "." in meaningful_path:
+            meaningful_path = os.path.splitext(meaningful_path)[0]
+
+        # Replace path separators and problematic characters while preserving directory structure
+        sanitized_path = meaningful_path.replace("/", "_").replace("\\", "_")
+        sanitized_path = sanitized_path.replace(".", "_").replace("-", "_")
+        sanitized_path = sanitized_path.replace(" ", "_").replace("(", "").replace(")", "")
+        sanitized_path = sanitized_path.replace(":", "_").replace("@", "_")
+
+        # Handle leading underscores from paths like "_partials/file"
+        while sanitized_path.startswith("_"):
+            sanitized_path = sanitized_path[1:]
+
+        # Combine source prefix with path
+        full_id = f"{source_prefix}_{sanitized_path}"
 
         # Handle empty or all-numeric IDs first
-        if not sanitized:
-            return "empty"
-        elif sanitized.replace("_", "").isdigit():
-            sanitized = f"node_{hash(node_id) % 10000}"
+        if not full_id:
+            return f"{source_prefix}_empty"
+        if full_id.replace("_", "").replace(source_prefix, "").isdigit():
+            full_id = f"{source_prefix}_node_{hash(node_id) % 10000}"
 
         # Ensure it starts with a letter or underscore
-        elif sanitized and sanitized[0].isdigit():
-            sanitized = f"n_{sanitized}"
-        elif starts_with_dash and sanitized.startswith("_"):
-            sanitized = f"n_{sanitized}"
+        elif (full_id and full_id[0].isdigit()) or (starts_with_dash and full_id.startswith("_")):
+            full_id = f"n_{full_id}"
 
-        return sanitized
+        return full_id

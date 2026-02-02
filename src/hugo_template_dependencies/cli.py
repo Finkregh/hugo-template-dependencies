@@ -7,6 +7,7 @@ between templates, partials, and modules.
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import List
 
@@ -157,13 +158,21 @@ def analyze(
     error_handler = ErrorHandler(console=console, verbose=effective_verbose)
     progress_reporter = ProgressReporter(console=console, show_progress=effective_show_progress)
 
+    # Create status console for proper output routing
+    # When using -o flag: status messages to stdout, content to file
+    # When not using -o flag: status messages to stderr, content to stdout
+    if output_file:
+        status_console = console  # Use regular console (stdout) when writing content to file
+    else:
+        status_console = Console(file=sys.stderr)  # Use stderr when content goes to stdout
+
     if effective_verbose:
-        console.print(f"[blue]🔍 Analyzing Hugo project at:[/blue] {project_path}")
-        console.print(f"[blue]📊 Output format:[/blue] {format}")
-        console.print(f"[blue]📦 Include modules:[/blue] {include_modules}")
-        console.print(f"[blue]⚙️  Progress bars:[/blue] {'enabled' if effective_show_progress else 'disabled'}")
-        console.print(f"[blue]🐛 Verbose mode:[/blue] {'enabled' if verbose else 'disabled'}")
-        console.print(f"[blue]🔬 Debug mode:[/blue] {'enabled' if debug else 'disabled'}")
+        status_console.print(f"[blue]🔍 Analyzing Hugo project at:[/blue] {project_path}")
+        status_console.print(f"[blue]📊 Output format:[/blue] {format}")
+        status_console.print(f"[blue]📦 Include modules:[/blue] {include_modules}")
+        status_console.print(f"[blue]⚙️  Progress bars:[/blue] {'enabled' if effective_show_progress else 'disabled'}")
+        status_console.print(f"[blue]🐛 Verbose mode:[/blue] {'enabled' if verbose else 'disabled'}")
+        status_console.print(f"[blue]🔬 Debug mode:[/blue] {'enabled' if debug else 'disabled'}")
 
     try:
         # Import here to avoid circular imports
@@ -394,14 +403,17 @@ def analyze(
         # Helper function to write output to file or console
         def write_output(content: str, description: str = "Output") -> None:
             if output_file:
+                # When using -o: content goes to file, status messages go to stdout
                 with open(output_file, "w", encoding="utf-8") as f:
                     f.write(content)
                 if not quiet:
-                    console.print(f"[green]{description} saved to:[/green] {output_file}")
+                    status_console.print(f"[green]{description} saved to:[/green] {output_file}")
             else:
+                # When not using -o: status messages go to stderr, content to stdout
                 if not quiet and description != "Output":
-                    console.print(f"[blue]{description}:[/blue]")
-                console.print(content)
+                    status_console.print(f"[blue]{description}:[/blue]")
+                # Content always goes to stdout for piping/redirection
+                print(content)
 
         if format == "tree":
             tree = Tree(f"📁 Hugo Project: {project_path.name}")

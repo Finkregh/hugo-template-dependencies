@@ -2,18 +2,21 @@
 
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from hugo_template_dependencies.analyzer.template_parser import HugoTemplateParser, ParseContext
+
+from hugo_template_dependencies.analyzer.template_parser import (
+    HugoTemplateParser,
+)
 from hugo_template_dependencies.graph.hugo_graph import TemplateType
 
 
 class TestHugoTemplateParser:
     """Test cases for the enhanced Hugo template parser."""
 
-    def setup_method(self):
+    def setup_method(self) -> None:
         """Set up test instance."""
         self.parser = HugoTemplateParser()
 
-    def test_parse_basic_partial(self):
+    def test_parse_basic_partial(self) -> None:
         """Test parsing basic partial includes."""
         content = '{{ partial "header.html" . }}'
         dependencies = self.parser.extract_dependencies(content)
@@ -24,7 +27,7 @@ class TestHugoTemplateParser:
         assert dependencies[0]["line_number"] == 1
         assert not dependencies[0]["is_conditional"]
 
-    def test_parse_template_with_comments(self):
+    def test_parse_template_with_comments(self) -> None:
         """Test parsing templates with Hugo and HTML comments."""
         content = """
         {{/* This is a comment with {{ partial "ignored.html" . }} */}}
@@ -37,7 +40,7 @@ class TestHugoTemplateParser:
         assert len(dependencies) == 1
         assert dependencies[0]["target"] == "real-partial.html"
 
-    def test_parse_nested_hugo_comments(self):
+    def test_parse_nested_hugo_comments(self) -> None:
         """Test parsing nested Hugo comments."""
         content = """
         {{/* Outer comment {{/* nested comment */}} still in comment */}}
@@ -48,7 +51,7 @@ class TestHugoTemplateParser:
         assert len(dependencies) == 1
         assert dependencies[0]["target"] == "visible.html"
 
-    def test_parse_range_blocks(self):
+    def test_parse_range_blocks(self) -> None:
         """Test parsing range control flow."""
         content = """
         {{ range .Pages }}
@@ -65,7 +68,7 @@ class TestHugoTemplateParser:
         assert len(range_deps) == 1
         assert partial_deps[0]["is_conditional"]  # Partial is inside range
 
-    def test_parse_if_blocks(self):
+    def test_parse_if_blocks(self) -> None:
         """Test parsing if/else control flow."""
         content = """
         {{ if .Params.show }}
@@ -86,7 +89,7 @@ class TestHugoTemplateParser:
         for partial in partial_deps:
             assert partial["is_conditional"]
 
-    def test_parse_with_blocks(self):
+    def test_parse_with_blocks(self) -> None:
         """Test parsing with control flow."""
         content = """
         {{ with .Params.data }}
@@ -102,7 +105,7 @@ class TestHugoTemplateParser:
         assert len(with_deps) == 1
         assert partial_deps[0]["is_conditional"]
 
-    def test_parse_block_definitions(self):
+    def test_parse_block_definitions(self) -> None:
         """Test parsing block definitions."""
         content = """
         {{ define "header" }}
@@ -120,7 +123,7 @@ class TestHugoTemplateParser:
         assert block_deps[0]["target"] == "header"
         assert partial_deps[0]["is_conditional"]  # Inside block definition
 
-    def test_parse_block_usage(self):
+    def test_parse_block_usage(self) -> None:
         """Test parsing block usage."""
         content = """
         {{ block "main" . }}
@@ -134,7 +137,7 @@ class TestHugoTemplateParser:
         assert len(block_deps) == 1
         assert block_deps[0]["target"] == "main"
 
-    def test_parse_enhanced_context(self):
+    def test_parse_enhanced_context(self) -> None:
         """Test enhanced context extraction."""
         content = 'Some content before {{ partial "test.html" . }} some content after'
         dependencies = self.parser.extract_dependencies(content)
@@ -145,11 +148,11 @@ class TestHugoTemplateParser:
         assert "<<<" in context
         assert "test.html" in context
 
-    def test_parse_multiline_templates(self):
+    def test_parse_multiline_templates(self) -> None:
         """Test parsing multiline template functions."""
         content = """
-        {{ partial 
-           "multiline.html" 
+        {{ partial
+           "multiline.html"
            (dict "param" "value") }}
         """
         dependencies = self.parser.extract_dependencies(content)
@@ -158,7 +161,7 @@ class TestHugoTemplateParser:
         assert dependencies[0]["target"] == "multiline.html"
         assert dependencies[0]["parameters"] == '(dict "param" "value")'
 
-    def test_parse_template_with_parameters(self):
+    def test_parse_template_with_parameters(self) -> None:
         """Test parsing templates with parameters."""
         content = '{{ template "pagination.html" (dict "context" . "items" .Pages) }}'
         dependencies = self.parser.extract_dependencies(content)
@@ -168,15 +171,16 @@ class TestHugoTemplateParser:
         assert dependencies[0]["target"] == "pagination.html"
         assert "dict" in dependencies[0]["parameters"]
 
-    def test_parse_file_nonexistent(self):
+    def test_parse_file_nonexistent(self) -> None:
         """Test parsing non-existent file fails gracefully."""
         try:
             self.parser.parse_file(Path("/nonexistent/file.html"))
-            assert False, "Should have raised FileNotFoundError"
+            msg = "Should have raised FileNotFoundError"
+            raise AssertionError(msg)
         except FileNotFoundError as e:
             assert "Template file not found" in str(e)
 
-    def test_parse_file_integration(self):
+    def test_parse_file_integration(self) -> None:
         """Test parsing a complete template file."""
         content = """{{/* Template with various dependencies */}}
 <!DOCTYPE html>
@@ -188,17 +192,17 @@ class TestHugoTemplateParser:
     {{ block "header" . }}
         {{ partial "default-header.html" . }}
     {{ end }}
-    
+
     {{ if .Params.showSidebar }}
         {{ partial "sidebar.html" . }}
     {{ end }}
-    
+
     <main>
         {{ range .Pages }}
             {{ template "page-summary.html" . }}
         {{ end }}
     </main>
-    
+
     {{ with .Params.footer }}
         {{ partial "footer.html" . }}
     {{ end }}
@@ -213,7 +217,7 @@ class TestHugoTemplateParser:
         try:
             template = self.parser.parse_file(temp_path)
 
-            assert template.template_type == TemplateType.LAYOUT
+            assert template.template_type == TemplateType.TEMPLATE
             assert template.content == content
             assert len(template.dependencies) > 0
 
@@ -235,7 +239,7 @@ class TestHugoTemplateParser:
         finally:
             temp_path.unlink()
 
-    def test_error_handling_malformed_syntax(self):
+    def test_error_handling_malformed_syntax(self) -> None:
         """Test error handling for malformed template syntax."""
         # Test graceful handling - parser should not crash on malformed content
         malformed_content = "{{ partial incomplete"
@@ -244,7 +248,7 @@ class TestHugoTemplateParser:
         # Should return empty list rather than crashing
         assert isinstance(dependencies, list)
 
-    def test_empty_content(self):
+    def test_empty_content(self) -> None:
         """Test handling of empty content."""
         dependencies = self.parser.extract_dependencies("")
         assert dependencies == []

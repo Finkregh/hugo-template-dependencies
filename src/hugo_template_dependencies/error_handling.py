@@ -9,11 +9,13 @@ from __future__ import annotations
 import logging
 import sys
 from enum import Enum
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from rich.console import Console
 from rich.panel import Panel
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class ErrorSeverity(Enum):
@@ -47,6 +49,7 @@ class HugoAnalysisError(Exception):
             suggestions: Recovery suggestions
             file_path: File where error occurred
             line_number: Line number where error occurred
+
         """
         super().__init__(message)
         self.message = message
@@ -74,6 +77,7 @@ class TemplateParsingError(HugoAnalysisError):
             file_path: Template file path
             line_number: Line number where error occurred
             context: Additional context information
+
         """
         # Generate specific suggestions based on error content
         suggestions = self._generate_parsing_suggestions(message, context)
@@ -87,7 +91,9 @@ class TemplateParsingError(HugoAnalysisError):
             line_number=line_number,
         )
 
-    def _generate_parsing_suggestions(self, message: str, context: dict[str, Any] | None) -> list[str]:
+    def _generate_parsing_suggestions(
+        self, message: str, context: dict[str, Any] | None,
+    ) -> list[str]:
         """Generate specific suggestions based on the error message.
 
         Args:
@@ -96,6 +102,7 @@ class TemplateParsingError(HugoAnalysisError):
 
         Returns:
             List of specific suggestions
+
         """
         suggestions = [
             "Check template syntax for Hugo-specific directives",
@@ -108,20 +115,35 @@ class TemplateParsingError(HugoAnalysisError):
 
         # Add specific suggestions based on error type
         if "partial" in message_lower:
-            suggestions.insert(0, "Missing partial: Check if the partial file exists in layouts/partials/")
+            suggestions.insert(
+                0,
+                "Missing partial: Check if the partial file exists in layouts/partials/",
+            )
             suggestions.insert(1, "Verify partial name spelling and path format")
 
         if "template" in message_lower and "not found" in message_lower:
-            suggestions.insert(0, "Missing template: Check if the template file exists in layouts/")
-            suggestions.insert(1, "Verify template type (single, list, baseof) and path")
+            suggestions.insert(
+                0, "Missing template: Check if the template file exists in layouts/",
+            )
+            suggestions.insert(
+                1, "Verify template type (single, list, baseof) and path",
+            )
 
         if "syntax" in message_lower or "parse" in message_lower:
-            suggestions.insert(0, "Syntax error: Check Go template syntax ({{ }}, {{- -}}, etc.)")
-            suggestions.insert(1, "Ensure all Hugo functions and variables are correctly formatted")
+            suggestions.insert(
+                0, "Syntax error: Check Go template syntax ({{ }}, {{- -}}, etc.)",
+            )
+            suggestions.insert(
+                1, "Ensure all Hugo functions and variables are correctly formatted",
+            )
 
         if "end" in message_lower or "unclosed" in message_lower:
-            suggestions.insert(0, "Unclosed block: Check for missing {{ end }} or {{- end -}}")
-            suggestions.insert(1, "Verify all {{ define }}, {{ block }}, {{ with }} blocks are closed")
+            suggestions.insert(
+                0, "Unclosed block: Check for missing {{ end }} or {{- end -}}",
+            )
+            suggestions.insert(
+                1, "Verify all {{ define }}, {{ block }}, {{ with }} blocks are closed",
+            )
 
         if context and "line_content" in context:
             suggestions.insert(0, f"Line content: {context['line_content']}")
@@ -146,6 +168,7 @@ class DependencyResolutionError(HugoAnalysisError):
             source_file: Source template file
             target_dependency: Target dependency that couldn't be resolved
             context: Additional context information
+
         """
         # Generate specific suggestions based on dependency type
         suggestions = self._generate_dependency_suggestions(target_dependency, context)
@@ -159,7 +182,7 @@ class DependencyResolutionError(HugoAnalysisError):
         )
 
     def _generate_dependency_suggestions(
-        self, target_dependency: str | None, context: dict[str, Any] | None
+        self, target_dependency: str | None, context: dict[str, Any] | None,
     ) -> list[str]:
         """Generate specific suggestions based on the dependency type.
 
@@ -169,6 +192,7 @@ class DependencyResolutionError(HugoAnalysisError):
 
         Returns:
             List of specific suggestions
+
         """
         suggestions = [
             "Verify the target template or partial exists",
@@ -182,22 +206,39 @@ class DependencyResolutionError(HugoAnalysisError):
 
             # Add specific suggestions based on dependency type
             if "partial" in dep_lower:
-                suggestions.insert(0, f"Missing partial '{target_dependency}': Check layouts/partials/ directory")
-                suggestions.insert(1, "Ensure partial name doesn't include .html extension in the call")
+                suggestions.insert(
+                    0,
+                    f"Missing partial '{target_dependency}': Check layouts/partials/ directory",
+                )
+                suggestions.insert(
+                    1, "Ensure partial name doesn't include .html extension in the call",
+                )
 
             if "layouts/" in dep_lower or "theme/" in dep_lower:
-                suggestions.insert(0, f"Missing layout '{target_dependency}': Check layouts/ directory structure")
-                suggestions.insert(1, "Verify theme is properly configured and accessible")
+                suggestions.insert(
+                    0,
+                    f"Missing layout '{target_dependency}': Check layouts/ directory structure",
+                )
+                suggestions.insert(
+                    1, "Verify theme is properly configured and accessible",
+                )
 
             if "module" in dep_lower:
-                suggestions.insert(0, f"Missing module '{target_dependency}': Check go.mod and hugo.toml")
+                suggestions.insert(
+                    0,
+                    f"Missing module '{target_dependency}': Check go.mod and hugo.toml",
+                )
                 suggestions.insert(1, "Run 'hugo mod get' to download missing modules")
 
             # Add path-specific suggestions
             if target_dependency.startswith("partials/"):
-                suggestions.insert(0, f"Check if file exists: layouts/{target_dependency}.html")
+                suggestions.insert(
+                    0, f"Check if file exists: layouts/{target_dependency}.html",
+                )
             elif "/" in target_dependency:
-                suggestions.insert(0, f"Check if file exists: layouts/{target_dependency}")
+                suggestions.insert(
+                    0, f"Check if file exists: layouts/{target_dependency}",
+                )
 
         return suggestions
 
@@ -219,6 +260,7 @@ class FileAccessError(HugoAnalysisError):
             file_path: File that couldn't be accessed
             operation: Operation being performed (read, write, etc.)
             context: Additional context information
+
         """
         suggestions = [
             "Check file permissions",
@@ -230,7 +272,11 @@ class FileAccessError(HugoAnalysisError):
         super().__init__(
             message=message,
             severity=ErrorSeverity.ERROR,
-            context={**context, "operation": operation} if context else {"operation": operation},
+            context=(
+                {**context, "operation": operation}
+                if context
+                else {"operation": operation}
+            ),
             suggestions=suggestions,
             file_path=file_path,
         )
@@ -251,6 +297,7 @@ class ConfigurationError(HugoAnalysisError):
             message: Error message
             config_file: Configuration file path
             context: Additional context information
+
         """
         suggestions = [
             "Validate Hugo configuration file syntax",
@@ -277,6 +324,7 @@ class ErrorHandler:
         Args:
             console: Rich console for output
             verbose: Whether to enable verbose logging
+
         """
         self.console = console or Console()
         self.verbose = verbose
@@ -291,6 +339,7 @@ class ErrorHandler:
 
         Args:
             verbose: Whether to enable verbose logging
+
         """
         level = logging.DEBUG if verbose else logging.INFO
 
@@ -313,6 +362,7 @@ class ErrorHandler:
 
         Returns:
             True if error was handled successfully, False otherwise
+
         """
         # Log the error
         self._log_error(error)
@@ -344,6 +394,7 @@ class ErrorHandler:
             file_path: Template file path
             error: Original parsing error
             line_number: Line number where error occurred
+
         """
         context = {
             "original_error": str(error),
@@ -371,6 +422,7 @@ class ErrorHandler:
             source_file: Source template file
             target_dependency: Target dependency that couldn't be resolved
             error: Original resolution error
+
         """
         context = {
             "original_error": str(error),
@@ -399,6 +451,7 @@ class ErrorHandler:
             file_path: File that couldn't be accessed
             operation: Operation being performed
             error: Original file access error
+
         """
         context = {
             "original_error": str(error),
@@ -427,13 +480,16 @@ class ErrorHandler:
             message: Error message
             config_file: Configuration file path
             error: Original configuration error
+
         """
         context = {}
         if error:
-            context.update({
-                "original_error": str(error),
-                "error_type": type(error).__name__,
-            })
+            context.update(
+                {
+                    "original_error": str(error),
+                    "error_type": type(error).__name__,
+                },
+            )
 
         config_error = ConfigurationError(
             message=message,
@@ -448,6 +504,7 @@ class ErrorHandler:
 
         Returns:
             Dictionary with error counts by severity
+
         """
         return {
             "errors": self.error_count,
@@ -460,6 +517,7 @@ class ErrorHandler:
 
         Args:
             error: Error to log
+
         """
         log_message = f"{error.message}"
         if error.file_path:
@@ -468,21 +526,22 @@ class ErrorHandler:
             log_message += f" (line: {error.line_number})"
 
         if error.severity == ErrorSeverity.DEBUG:
-            self.logger.debug(log_message, exc_info=True)
+            self.logger.debug(log_message)
         elif error.severity == ErrorSeverity.INFO:
             self.logger.info(log_message)
         elif error.severity == ErrorSeverity.WARNING:
             self.logger.warning(log_message)
         elif error.severity == ErrorSeverity.ERROR:
-            self.logger.error(log_message, exc_info=True)
+            self.logger.error(log_message)
         elif error.severity == ErrorSeverity.CRITICAL:
-            self.logger.critical(log_message, exc_info=True)
+            self.logger.critical(log_message)
 
     def _display_error(self, error: HugoAnalysisError) -> None:
         """Display error to user with rich formatting and icons.
 
         Args:
             error: Error to display
+
         """
         # Choose icon and style based on severity
         if error.severity == ErrorSeverity.WARNING:
@@ -533,7 +592,7 @@ class ErrorHandler:
                 title=f"[{style}]{icon} {title}[/{style}]",
                 border_style=style,
                 padding=(1, 2),
-            )
+            ),
         )
 
     def _attempt_recovery(self, error: HugoAnalysisError) -> bool:
@@ -544,15 +603,16 @@ class ErrorHandler:
 
         Returns:
             True if recovery was successful, False otherwise
+
         """
         # Recovery strategies based on error type
         if isinstance(error, TemplateParsingError):
             return self._recover_from_parsing_error(error)
-        elif isinstance(error, DependencyResolutionError):
+        if isinstance(error, DependencyResolutionError):
             return self._recover_from_dependency_error(error)
-        elif isinstance(error, FileAccessError):
+        if isinstance(error, FileAccessError):
             return self._recover_from_file_access_error(error)
-        elif isinstance(error, ConfigurationError):
+        if isinstance(error, ConfigurationError):
             return self._recover_from_configuration_error(error)
 
         return False
@@ -565,8 +625,11 @@ class ErrorHandler:
 
         Returns:
             True if recovery was successful
+
         """
-        self.logger.info(f"Attempting to recover from parsing error in {error.file_path}")
+        self.logger.info(
+            f"Attempting to recover from parsing error in {error.file_path}",
+        )
 
         # For now, just log that we're skipping this file
         if error.file_path:
@@ -582,12 +645,15 @@ class ErrorHandler:
 
         Returns:
             True if recovery was successful
+
         """
-        self.logger.info(f"Attempting to recover from dependency resolution error")
+        self.logger.info("Attempting to recover from dependency resolution error")
 
         # For now, just log that we're skipping this dependency
         if error.context.get("target_dependency"):
-            self.logger.info(f"Skipping unresolved dependency: {error.context['target_dependency']}")
+            self.logger.info(
+                f"Skipping unresolved dependency: {error.context['target_dependency']}",
+            )
 
         return True  # Continue processing other dependencies
 
@@ -599,8 +665,9 @@ class ErrorHandler:
 
         Returns:
             True if recovery was successful
+
         """
-        self.logger.info(f"Attempting to recover from file access error")
+        self.logger.info("Attempting to recover from file access error")
 
         # For now, just log that we're skipping this file
         if error.file_path:
@@ -616,8 +683,9 @@ class ErrorHandler:
 
         Returns:
             True if recovery was successful
+
         """
-        self.logger.info(f"Attempting to recover from configuration error")
+        self.logger.info("Attempting to recover from configuration error")
 
         # Configuration errors are usually not recoverable
         self.logger.error("Configuration error requires manual intervention")
