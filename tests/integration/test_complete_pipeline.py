@@ -393,7 +393,7 @@ class TestIntegrationPipeline:
         cmd = [
             "uv",
             "run",
-            "hugo-tpldeps",
+            "hugo-template-dependencies",
             "analyze",
             "--format",
             "json",

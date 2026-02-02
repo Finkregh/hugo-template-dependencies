@@ -70,3 +70,15 @@ class TestTemplateClassification:
         path = Path("layouts/_partials/modules/forms/contact/fields.html")
         result = HugoTemplateParser._determine_template_type(path)
         assert result == TemplateType.PARTIAL
+
+    def test_basic_partial_pattern(self):
+        """Test template classification for basic_partial_pattern mock."""
+        # Test main template
+        main_path = Path("tests/mocks/basic_partial_pattern/layouts/single.html")
+        main_result = HugoTemplateParser._determine_template_type(main_path)
+        assert main_result == TemplateType.TEMPLATE
+
+        # Test partial template
+        partial_path = Path("tests/mocks/basic_partial_pattern/layouts/_partials/header.html")
+        partial_result = HugoTemplateParser._determine_template_type(partial_path)
+        assert partial_result == TemplateType.PARTIAL
