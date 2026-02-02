@@ -374,7 +374,11 @@ class DOTFormatter:
 
         # Add tooltip if context is available
         if "context" in data and data["context"]:
-            context = data["context"][:50] + "..." if len(data["context"]) > 50 else data["context"]
+            context = (
+                data["context"][:50] + "..."
+                if len(data["context"]) > 50
+                else data["context"]
+            )
             attributes.append(f'tooltip="{context}"')
 
         return ", ".join(attributes)
@@ -554,7 +558,9 @@ class DOTFormatter:
             "    // Default attributes are set in graph header",
         ]
 
-    def _sanitize_id(self, node_id: str, node_data: dict[str, Any] | None = None) -> str:
+    def _sanitize_id(
+        self, node_id: str, node_data: dict[str, Any] | None = None
+    ) -> str:
         """Sanitize node ID for DOT compatibility.
 
         Creates meaningful IDs by extracting relative path context with source prefixes:
@@ -659,7 +665,9 @@ class DOTFormatter:
         # Replace path separators and problematic characters while preserving directory structure
         sanitized_path = meaningful_path.replace("/", "_").replace("\\", "_")
         sanitized_path = sanitized_path.replace(".", "_").replace("-", "_")
-        sanitized_path = sanitized_path.replace(" ", "_").replace("(", "").replace(")", "")
+        sanitized_path = (
+            sanitized_path.replace(" ", "_").replace("(", "").replace(")", "")
+        )
         sanitized_path = sanitized_path.replace(":", "_").replace("@", "_")
 
         # Handle leading underscores from paths like "_partials/file"
@@ -676,7 +684,9 @@ class DOTFormatter:
             full_id = f"{source_prefix}_node_{hash(node_id) % 10000}"
 
         # Ensure it starts with a letter or underscore
-        elif (full_id and full_id[0].isdigit()) or (starts_with_dash and full_id.startswith("_")):
+        elif (full_id and full_id[0].isdigit()) or (
+            starts_with_dash and full_id.startswith("_")
+        ):
             full_id = f"n_{full_id}"
 
         return full_id

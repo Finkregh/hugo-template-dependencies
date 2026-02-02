@@ -39,16 +39,27 @@ def _build_partial_lookup(parsed_templates: dict, project_path: Path) -> dict:
     from hugo_template_dependencies.graph.hugo_graph import HugoTemplate
 
     lookup = {}
-    layouts_path = project_path / "layouts"
+    project_layouts_path = project_path / "layouts"
 
     for template_path, template in parsed_templates.items():
         path = Path(template_path)
 
-        # Try to make path relative to layouts directory
+        # Find the layouts directory in the template path
+        layouts_dir = None
+        for i, part in enumerate(path.parts):
+            if part == "layouts":
+                layouts_dir = Path(*path.parts[: i + 1])
+                break
+
+        if not layouts_dir:
+            # No layouts directory found, skip
+            continue
+
+        # Make path relative to the layouts directory
         try:
-            relative_path = path.relative_to(layouts_path)
+            relative_path = path.relative_to(layouts_dir)
         except ValueError:
-            # Not under layouts directory, skip
+            # Should not happen since we found layouts dir, but skip if it does
             continue
 
         # Create various possible reference formats
@@ -178,6 +189,7 @@ def analyze(
         # Import here to avoid circular imports
         from hugo_template_dependencies.analyzer.template_discovery import TemplateDiscovery
         from hugo_template_dependencies.graph.hugo_graph import HugoDependencyGraph
+        from hugo_template_dependencies.config.parser import HugoConfigParser
         from hugo_template_dependencies.output.mermaid_formatter import MermaidFormatter
         from hugo_template_dependencies.output.json_formatter import JSONFormatter
         from hugo_template_dependencies.output.dot_formatter import DOTFormatter
@@ -221,6 +233,21 @@ def analyze(
 
         # Build dependency graph
         graph = HugoDependencyGraph()
+
+        # Extract and set replacement mappings from Hugo config to handle module display names correctly
+        try:
+            config_parser = HugoConfigParser()
+            hugo_config = config_parser.parse_hugo_config(project_path)
+            replacement_mappings = config_parser.extract_module_replacements(hugo_config)
+            if replacement_mappings:
+                graph.set_replacement_mappings(replacement_mappings)
+                if effective_debug:
+                    console.print(f"[dim cyan]  Set {len(replacement_mappings)} replacement mappings[/dim cyan]")
+        except Exception as e:
+            # Non-critical error, continue without replacement mappings
+            if effective_debug:
+                console.print(f"[dim yellow]  Warning: Could not extract replacement mappings: {e}[/dim yellow]")
+
         parser = HugoTemplateParser()
 
         # First pass: parse all templates and add them to the graph
@@ -235,6 +262,8 @@ def analyze(
                     progress_reporter.update_current_file(template.file_path)
 
                 parsed = parser.parse_file(template.file_path)
+                # Preserve the source information from the original template
+                parsed.source = template.source
                 graph.add_template(parsed)
                 parsed_templates[str(parsed.file_path)] = parsed
 

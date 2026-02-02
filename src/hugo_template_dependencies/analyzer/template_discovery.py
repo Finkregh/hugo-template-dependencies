@@ -57,10 +57,15 @@ class TemplateDiscovery:
 
         # Discover all template files
         for template_file in layouts_path.rglob("*"):
-            if template_file.is_file() and template_file.suffix in self.template_extensions:
+            if (
+                template_file.is_file()
+                and template_file.suffix in self.template_extensions
+            ):
                 template = HugoTemplate(
                     file_path=template_file,
-                    template_type=HugoTemplateParser._determine_template_type(template_file),
+                    template_type=HugoTemplateParser._determine_template_type(
+                        template_file
+                    ),
                 )
                 templates.append(template)
 

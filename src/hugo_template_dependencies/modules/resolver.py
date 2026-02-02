@@ -202,7 +202,9 @@ class HugoModuleResolver:
                 logger.debug(f"    Adding template: {template_file.name}")
                 template = HugoTemplate(
                     file_path=template_file,
-                    template_type=HugoTemplateParser._determine_template_type(template_file),
+                    template_type=HugoTemplateParser._determine_template_type(
+                        template_file
+                    ),
                     source=module.path,  # Add source information
                 )
                 templates.append(template)

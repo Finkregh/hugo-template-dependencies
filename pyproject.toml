@@ -19,7 +19,7 @@ classifiers = [
 ]
 requires-python = ">=3.10,<4.0"
 dependencies = [
-    "typer[all]>=0.9.0",
+    "typer>=0.9.0",
     "toml>=0.10.2",
     "rich>=13.0.0",
     "graphviz>=0.20.0",
@@ -33,7 +33,7 @@ Homepage = "https://finkregh.github.io/hugo-template-dependencies/"
 Repository = "https://github.com/finkregh/hugo-template-dependencies"
 Documentation = "https://finkregh.github.io/hugo-template-dependencies/"
 [project.scripts]
-hugo-tpldeps = "hugo_template_dependencies.cli:app"
+hugo-template-dependencies = "hugo_template_dependencies.cli:app"
 
 [dependency-groups]
 dev = [
@@ -49,7 +49,11 @@ dev = [
     "mkdocstrings[python]>=1.0.0",
     "types-toml>=0.10.8",
     "uv>=0.9.27",
+    "mypy>=1.19.1",
 ]
+
+[[tool.uv.index]]
+url = "https://int.repositories.cloud.sap/artifactory/api/pypi/cia-pip-live/simple"
 
 [build-system]
 requires = ["hatchling"]

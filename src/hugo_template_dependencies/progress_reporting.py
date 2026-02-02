@@ -93,7 +93,9 @@ class ProgressReporter:
     """Enhanced progress reporter with rich UI and statistics."""
 
     def __init__(
-        self, console: Console | None = None, show_progress: bool = True,
+        self,
+        console: Console | None = None,
+        show_progress: bool = True,
     ) -> None:
         """Initialize progress reporter.
 
@@ -173,7 +175,8 @@ class ProgressReporter:
 
             # Update progress description with current file
             self.progress.update(
-                self.tasks["main"], description=f"📄 Processing: {file_path}",
+                self.tasks["main"],
+                description=f"📄 Processing: {file_path}",
             )
 
     def update_file_progress(self, processed: int, total: int | None = None) -> None:
@@ -259,7 +262,10 @@ class ProgressReporter:
         return TaskID(0)  # Dummy ID when progress is disabled
 
     def update_subtask(
-        self, name: str, completed: int, total: int | None = None,
+        self,
+        name: str,
+        completed: int,
+        total: int | None = None,
     ) -> None:
         """Update subtask progress.
 
@@ -288,7 +294,9 @@ class ProgressReporter:
     def print_statistics(self) -> None:
         """Print current analysis statistics."""
         table = Table(
-            title="Analysis Statistics", show_header=True, header_style="bold magenta",
+            title="Analysis Statistics",
+            show_header=True,
+            header_style="bold magenta",
         )
 
         table.add_column("Metric", style="cyan", width=25)
@@ -314,7 +322,9 @@ class ProgressReporter:
                 f"{dep_percentage:.1f}%",
             )
             table.add_row(
-                "Total Dependencies", f"{self.stats.total_dependencies:,}", "",
+                "Total Dependencies",
+                f"{self.stats.total_dependencies:,}",
+                "",
             )
 
         # Graph statistics
@@ -354,7 +364,8 @@ class ProgressReporter:
             style="white",
         )
         summary_text.append(
-            f"Dependencies Found: {self.stats.total_dependencies:,}\n", style="white",
+            f"Dependencies Found: {self.stats.total_dependencies:,}\n",
+            style="white",
         )
         summary_text.append(f"Graph Nodes: {self.stats.total_nodes:,}\n", style="white")
         summary_text.append(f"Graph Edges: {self.stats.total_edges:,}\n", style="white")
@@ -364,10 +375,12 @@ class ProgressReporter:
             summary_text.append(f"Warnings: {self.stats.warnings:,}\n", style="yellow")
 
         summary_text.append(
-            f"\nTotal Time: {self.stats.elapsed_time:.1f}s\n", style="white",
+            f"\nTotal Time: {self.stats.elapsed_time:.1f}s\n",
+            style="white",
         )
         summary_text.append(
-            f"Processing Rate: {self.stats.files_per_second:.1f} files/s", style="green",
+            f"Processing Rate: {self.stats.files_per_second:.1f} files/s",
+            style="green",
         )
 
         self.console.print(
@@ -398,7 +411,8 @@ class ProgressReporter:
         """Create main progress task."""
         if self.show_progress and self.progress:
             task_id = self.progress.add_task(
-                "Analyzing Hugo templates...", total=self.stats.total_files,
+                "Analyzing Hugo templates...",
+                total=self.stats.total_files,
             )
             self.tasks["main"] = task_id
 

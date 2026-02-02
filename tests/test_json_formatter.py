@@ -30,7 +30,10 @@ class MockGraph(GraphBase):
             file_path="/path/to/partial1.html",
         )
         self.graph.add_node(
-            "block1", type="block", display_name="Block 1", block_name="content",
+            "block1",
+            type="block",
+            display_name="Block 1",
+            block_name="content",
         )
 
         self.graph.add_edge(
@@ -41,7 +44,10 @@ class MockGraph(GraphBase):
             context='{{ partial "partial1.html" . }}',
         )
         self.graph.add_edge(
-            "template1", "block1", relationship="defines", line_number=10,
+            "template1",
+            "block1",
+            relationship="defines",
+            line_number=10,
         )
 
         self._nodes = {
@@ -67,7 +73,11 @@ class MockGraph(GraphBase):
         self.graph.add_node(node_id, type=node_type, **attributes)
 
     def add_edge(
-        self, source: str, target: str, relationship: str, **attributes: object,
+        self,
+        source: str,
+        target: str,
+        relationship: str,
+        **attributes: object,
     ) -> None:
         """Add an edge to mock graph."""
         self.graph.add_edge(source, target, relationship=relationship, **attributes)
@@ -199,7 +209,8 @@ class TestJSONFormatter:
         assert len(result["errors"]) == 0
 
     def test_validate_json_schema_missing_fields(
-        self, json_formatter: JSONFormatter,
+        self,
+        json_formatter: JSONFormatter,
     ) -> None:
         """Test JSON schema validation with missing required fields."""
         invalid_data = {
@@ -215,7 +226,8 @@ class TestJSONFormatter:
         assert any("edges" in error for error in result["errors"])
 
     def test_validate_json_schema_invalid_nodes(
-        self, json_formatter: JSONFormatter,
+        self,
+        json_formatter: JSONFormatter,
     ) -> None:
         """Test JSON schema validation with invalid nodes."""
         invalid_data = {
@@ -233,7 +245,8 @@ class TestJSONFormatter:
         assert any("id" in error for error in result["errors"])
 
     def test_validate_json_schema_orphaned_edges(
-        self, json_formatter: JSONFormatter,
+        self,
+        json_formatter: JSONFormatter,
     ) -> None:
         """Test JSON schema validation with edges referencing non-existent nodes."""
         data_with_orphans = {
@@ -268,7 +281,9 @@ class TestJSONFormatter:
             file_path = Path(temp_dir) / "output.json"
 
             json_formatter.save_to_file(
-                file_path, format_type="simple", validate_output=False,
+                file_path,
+                format_type="simple",
+                validate_output=False,
             )
 
             assert file_path.exists()
@@ -287,7 +302,9 @@ class TestJSONFormatter:
             file_path = Path(temp_dir) / "output.json"
 
             json_formatter.save_to_file(
-                file_path, format_type="detailed", validate_output=True,
+                file_path,
+                format_type="detailed",
+                validate_output=True,
             )
 
             assert file_path.exists()
@@ -310,7 +327,8 @@ class TestJSONFormatter:
                 json_formatter.save_to_file(file_path, format_type="invalid")
 
     def test_save_to_file_with_validation_failure(
-        self, json_formatter: JSONFormatter,
+        self,
+        json_formatter: JSONFormatter,
     ) -> None:
         """Test saving with validation failure."""
         # Mock the format method to return invalid JSON
@@ -321,7 +339,9 @@ class TestJSONFormatter:
 
             with pytest.raises(ValueError, match="Generated JSON is invalid"):
                 json_formatter.save_to_file(
-                    file_path, format_type="detailed", validate_output=True,
+                    file_path,
+                    format_type="detailed",
+                    validate_output=True,
                 )
 
     def test_get_graph_statistics(self, json_formatter: JSONFormatter) -> None:

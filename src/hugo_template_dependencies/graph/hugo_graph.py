@@ -46,7 +46,9 @@ class HugoDependencyGraph(GraphBase):
         super().__init__()
         self.templates: dict[str, HugoTemplate] = {}
         self.modules: dict[str, HugoModule] = {}
-        self.replacement_mappings: dict[str, str] = {}  # replacement_path -> original_module
+        self.replacement_mappings: dict[str, str] = (
+            {}
+        )  # replacement_path -> original_module
 
     def set_replacement_mappings(self, replacements: dict[str, str]) -> None:
         """Store Hugo module replacement mappings for display purposes.
@@ -247,7 +249,11 @@ class HugoDependencyGraph(GraphBase):
             List of HugoTemplate objects matching specified type
 
         """
-        return [template for template in self.templates.values() if template.template_type.value == template_type]
+        return [
+            template
+            for template in self.templates.values()
+            if template.template_type.value == template_type
+        ]
 
     def get_template_dependency_chain(self, start_template: str) -> list[str]:
         """Get dependency chain starting from a specific template.
@@ -373,7 +379,9 @@ class HugoTemplate:
     template_type: TemplateType
     content: str | None = None
     dependencies: list[Any] | None = None
-    source: str = "local"  # Source: "local" or module path like "golang.foundata.com/hugo-theme-dev"
+    source: str = (
+        "local"  # Source: "local" or module path like "golang.foundata.com/hugo-theme-dev"
+    )
 
     @property
     def node_id(self) -> str:

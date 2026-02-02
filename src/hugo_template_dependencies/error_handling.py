@@ -92,7 +92,9 @@ class TemplateParsingError(HugoAnalysisError):
         )
 
     def _generate_parsing_suggestions(
-        self, message: str, context: dict[str, Any] | None,
+        self,
+        message: str,
+        context: dict[str, Any] | None,
     ) -> list[str]:
         """Generate specific suggestions based on the error message.
 
@@ -123,26 +125,32 @@ class TemplateParsingError(HugoAnalysisError):
 
         if "template" in message_lower and "not found" in message_lower:
             suggestions.insert(
-                0, "Missing template: Check if the template file exists in layouts/",
+                0,
+                "Missing template: Check if the template file exists in layouts/",
             )
             suggestions.insert(
-                1, "Verify template type (single, list, baseof) and path",
+                1,
+                "Verify template type (single, list, baseof) and path",
             )
 
         if "syntax" in message_lower or "parse" in message_lower:
             suggestions.insert(
-                0, "Syntax error: Check Go template syntax ({{ }}, {{- -}}, etc.)",
+                0,
+                "Syntax error: Check Go template syntax ({{ }}, {{- -}}, etc.)",
             )
             suggestions.insert(
-                1, "Ensure all Hugo functions and variables are correctly formatted",
+                1,
+                "Ensure all Hugo functions and variables are correctly formatted",
             )
 
         if "end" in message_lower or "unclosed" in message_lower:
             suggestions.insert(
-                0, "Unclosed block: Check for missing {{ end }} or {{- end -}}",
+                0,
+                "Unclosed block: Check for missing {{ end }} or {{- end -}}",
             )
             suggestions.insert(
-                1, "Verify all {{ define }}, {{ block }}, {{ with }} blocks are closed",
+                1,
+                "Verify all {{ define }}, {{ block }}, {{ with }} blocks are closed",
             )
 
         if context and "line_content" in context:
@@ -182,7 +190,9 @@ class DependencyResolutionError(HugoAnalysisError):
         )
 
     def _generate_dependency_suggestions(
-        self, target_dependency: str | None, context: dict[str, Any] | None,
+        self,
+        target_dependency: str | None,
+        context: dict[str, Any] | None,
     ) -> list[str]:
         """Generate specific suggestions based on the dependency type.
 
@@ -211,7 +221,8 @@ class DependencyResolutionError(HugoAnalysisError):
                     f"Missing partial '{target_dependency}': Check layouts/partials/ directory",
                 )
                 suggestions.insert(
-                    1, "Ensure partial name doesn't include .html extension in the call",
+                    1,
+                    "Ensure partial name doesn't include .html extension in the call",
                 )
 
             if "layouts/" in dep_lower or "theme/" in dep_lower:
@@ -220,7 +231,8 @@ class DependencyResolutionError(HugoAnalysisError):
                     f"Missing layout '{target_dependency}': Check layouts/ directory structure",
                 )
                 suggestions.insert(
-                    1, "Verify theme is properly configured and accessible",
+                    1,
+                    "Verify theme is properly configured and accessible",
                 )
 
             if "module" in dep_lower:
@@ -233,11 +245,13 @@ class DependencyResolutionError(HugoAnalysisError):
             # Add path-specific suggestions
             if target_dependency.startswith("partials/"):
                 suggestions.insert(
-                    0, f"Check if file exists: layouts/{target_dependency}.html",
+                    0,
+                    f"Check if file exists: layouts/{target_dependency}.html",
                 )
             elif "/" in target_dependency:
                 suggestions.insert(
-                    0, f"Check if file exists: layouts/{target_dependency}",
+                    0,
+                    f"Check if file exists: layouts/{target_dependency}",
                 )
 
         return suggestions

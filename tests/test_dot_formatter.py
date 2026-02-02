@@ -28,7 +28,10 @@ class MockGraph(GraphBase):
             file_path="/path/to/partial1.html",
         )
         self.graph.add_node(
-            "block1", type="block", display_name="Block 1", block_name="content",
+            "block1",
+            type="block",
+            display_name="Block 1",
+            block_name="content",
         )
 
         self.graph.add_edge(
@@ -39,7 +42,10 @@ class MockGraph(GraphBase):
             context='{{ partial "partial1.html" . }}',
         )
         self.graph.add_edge(
-            "template1", "block1", relationship="defines", line_number=10,
+            "template1",
+            "block1",
+            relationship="defines",
+            line_number=10,
         )
 
         self._nodes = {
@@ -65,7 +71,11 @@ class MockGraph(GraphBase):
         self.graph.add_node(node_id, type=node_type, **attributes)
 
     def add_edge(
-        self, source: str, target: str, relationship: str, **attributes: object,
+        self,
+        source: str,
+        target: str,
+        relationship: str,
+        **attributes: object,
     ) -> None:
         """Add an edge to mock graph."""
         self.graph.add_edge(source, target, relationship=relationship, **attributes)

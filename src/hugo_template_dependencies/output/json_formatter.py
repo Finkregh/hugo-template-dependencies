@@ -55,6 +55,7 @@ class JSONFormatter:
                                 "list",
                                 "index",
                                 "template",
+                                "shortcode",
                                 "block",
                                 "unknown",
                             ],

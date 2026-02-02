@@ -135,7 +135,9 @@ class MermaidFormatter:
             # Format source name for display
             # Try to get display name from HugoDependencyGraph if available
             try:
-                from hugo_template_dependencies.graph.hugo_graph import HugoDependencyGraph
+                from hugo_template_dependencies.graph.hugo_graph import (
+                    HugoDependencyGraph,
+                )
 
                 if isinstance(self.graph, HugoDependencyGraph):
                     source_display = self.graph.get_display_name_for_source(source)
@@ -152,7 +154,9 @@ class MermaidFormatter:
 
             # Create meaningful subgraph ID based on display name
             try:
-                from hugo_template_dependencies.graph.hugo_graph import HugoDependencyGraph
+                from hugo_template_dependencies.graph.hugo_graph import (
+                    HugoDependencyGraph,
+                )
 
                 if isinstance(self.graph, HugoDependencyGraph):
                     display_name = self.graph.get_display_name_for_source(source)
@@ -250,7 +254,9 @@ class MermaidFormatter:
         }
         return labels.get(relationship, "")
 
-    def _sanitize_id(self, node_id: str, node_data: dict[str, Any] | None = None) -> str:
+    def _sanitize_id(
+        self, node_id: str, node_data: dict[str, Any] | None = None
+    ) -> str:
         """Sanitize node ID for Mermaid compatibility.
 
         Creates meaningful IDs by extracting relative path context with source prefixes:

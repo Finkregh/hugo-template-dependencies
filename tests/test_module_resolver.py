@@ -59,7 +59,9 @@ cacheDir = "/tmp/test_cache"
 class TestModuleReplacements:
     """Test module replacement resolution."""
 
-    def test_replacement_as_local_path(self, temp_project: Path, temp_cache: Path) -> None:
+    def test_replacement_as_local_path(
+        self, temp_project: Path, temp_cache: Path
+    ) -> None:
         """Test replacement resolves to local relative path."""
         # Setup: Create parent theme at ../../..
         parent_theme = temp_project.parent.parent.parent / "theme"
@@ -99,7 +101,9 @@ class TestModuleReplacements:
         assert resolved.exists()
         assert (resolved / "layouts" / "baseof.html").exists()
 
-    def test_replacement_fallback_to_cache(self, temp_project: Path, temp_cache: Path) -> None:
+    def test_replacement_fallback_to_cache(
+        self, temp_project: Path, temp_cache: Path
+    ) -> None:
         """Test replacement falls back to cachedir when local path doesn't exist."""
         # Setup: Create module in cache
         module_dir = temp_cache / "github.com" / "user" / "theme@v1.0.0"
@@ -144,7 +148,6 @@ class TestLocalModuleResolution:
         layouts.mkdir()
         (layouts / "list.html").write_text("{{ range .Pages }}{{ end }}")
 
-
         parser = HugoConfigParser()
 
         resolved = parser.resolve_module_path(
@@ -183,7 +186,9 @@ class TestRemoteModuleResolution:
         assert resolved is not None
         assert resolved == module_dir
 
-    def test_version_suffix_stripping(self, temp_project: Path, temp_cache: Path) -> None:
+    def test_version_suffix_stripping(
+        self, temp_project: Path, temp_cache: Path
+    ) -> None:
         """Test version suffix like +vendor is handled."""
         # Hugo mod graph reports: github.com/foo/bar@v1.0.0+vendor
         # But cache has: github.com/foo/bar@v1.0.0
@@ -232,7 +237,9 @@ class TestRemoteModuleResolution:
 class TestHierarchicalCacheStructure:
     """Test hierarchical cache directory handling."""
 
-    def test_hierarchical_cache_format(self, temp_project: Path, temp_cache: Path) -> None:
+    def test_hierarchical_cache_format(
+        self, temp_project: Path, temp_cache: Path
+    ) -> None:
         """Test resolving from hierarchical cache (domain/module@version)."""
         # Create hierarchical structure
         domain_dir = temp_cache / "golang.foundata.com"
@@ -281,7 +288,9 @@ class TestFullModuleResolution:
     """Test complete module resolution workflow."""
 
     def test_resolve_modules_with_replacements(
-        self, temp_project: Path, temp_cache: Path,
+        self,
+        temp_project: Path,
+        temp_cache: Path,
     ) -> None:
         """Test full resolve_modules() workflow with replacements."""
         # Setup local replacement target
@@ -403,7 +412,9 @@ class TestExampleSiteRealData:
         assert imports[1]["path"] == "golang.foundata.com/hugo-theme-dev"
 
     def test_examplesite_module_resolution_logic(
-        self, temp_project: Path, temp_cache: Path,
+        self,
+        temp_project: Path,
+        temp_cache: Path,
     ) -> None:
         """Test resolution logic matching exampleSite structure."""
         # Simulate exampleSite structure

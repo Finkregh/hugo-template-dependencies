@@ -223,18 +223,28 @@ class TestHugoTemplateParser:
 
             # Check for expected dependencies
             partial_deps = [d for d in template.dependencies if d["type"] == "partial"]
-            template_deps = [d for d in template.dependencies if d["type"] == "template"]
-            block_deps = [d for d in template.dependencies if d["type"] == "block_usage"]
-            control_deps = [d for d in template.dependencies if d["type"] in ["if", "range", "with"]]
+            template_deps = [
+                d for d in template.dependencies if d["type"] == "template"
+            ]
+            block_deps = [
+                d for d in template.dependencies if d["type"] == "block_usage"
+            ]
+            control_deps = [
+                d for d in template.dependencies if d["type"] in ["if", "range", "with"]
+            ]
 
-            assert len(partial_deps) >= 3  # head.html, default-header.html, sidebar.html, footer.html
+            assert (
+                len(partial_deps) >= 3
+            )  # head.html, default-header.html, sidebar.html, footer.html
             assert len(template_deps) >= 1  # page-summary.html
             assert len(block_deps) >= 1  # header block
             assert len(control_deps) >= 3  # if, range, with
 
             # Verify conditional detection
             conditional_partials = [d for d in partial_deps if d["is_conditional"]]
-            assert len(conditional_partials) >= 2  # sidebar and footer should be conditional
+            assert (
+                len(conditional_partials) >= 2
+            )  # sidebar and footer should be conditional
 
         finally:
             temp_path.unlink()

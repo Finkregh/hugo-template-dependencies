@@ -220,7 +220,11 @@ class HugoConfigParser:
 
             # Extract module basename from original path
             # e.g., github.com/finkregh/hugo-theme-component-ical -> hugo-theme-component-ical
-            module_basename = module_path_str.split("/")[-1] if "/" in module_path_str else module_path_str
+            module_basename = (
+                module_path_str.split("/")[-1]
+                if "/" in module_path_str
+                else module_path_str
+            )
 
             # Hugo's replacement format: append module basename to replacement path
             # e.g., ../../.. + hugo-theme-component-ical = ../../../hugo-theme-component-ical
@@ -286,7 +290,9 @@ class HugoConfigParser:
                 if replacement_value == module_path_str:
                     # Found reverse match: extract basename from original_path
                     reverse_replacement_basename = (
-                        original_path.split("/")[-1] if "/" in original_path else original_path
+                        original_path.split("/")[-1]
+                        if "/" in original_path
+                        else original_path
                     )
                     logger.debug(
                         f"  Found reverse replacement: {module_path_str} <- {original_path} (basename: {reverse_replacement_basename})",
@@ -427,7 +433,9 @@ class HugoConfigParser:
 
                 # Try base version in hierarchical format
                 if base_version != version:
-                    hierarchical_base = cache_base / domain / f"{module_name}@{base_version}"
+                    hierarchical_base = (
+                        cache_base / domain / f"{module_name}@{base_version}"
+                    )
                     if hierarchical_base.exists():
                         logger.debug(
                             f"  ✓ Found (hierarchical, base version): {hierarchical_base}",
@@ -494,7 +502,9 @@ class HugoConfigParser:
         # Strategy 1: Flat directory format (module/path@version)
         try:
             all_entries = list(cache_base.iterdir())
-            logger.debug(f"Scanning {len(all_entries)} cache entries for module: {module_path_str}")
+            logger.debug(
+                f"Scanning {len(all_entries)} cache entries for module: {module_path_str}"
+            )
 
             for entry in all_entries:
                 if not entry.is_dir():
@@ -522,14 +532,20 @@ class HugoConfigParser:
                                 if not subentry.is_dir():
                                     continue
                                 if subentry.name.startswith(f"{module_name}@"):
-                                    logger.debug(f"    ✓ Found hierarchical match: {subentry.name}")
+                                    logger.debug(
+                                        f"    ✓ Found hierarchical match: {subentry.name}"
+                                    )
                                     matching_dirs.append(subentry)
                                     domain_matches.append(subentry.name)
 
                             if not domain_matches:
-                                logger.debug(f"    ✗ No matches in domain {domain} for module {module_name}")
+                                logger.debug(
+                                    f"    ✗ No matches in domain {domain} for module {module_name}"
+                                )
                         except Exception as e:
-                            logger.debug(f"    Error scanning domain directory {domain}: {e}")
+                            logger.debug(
+                                f"    Error scanning domain directory {domain}: {e}"
+                            )
         except Exception as e:
             logger.warning(f"Error iterating cache directory: {e}")
             return None

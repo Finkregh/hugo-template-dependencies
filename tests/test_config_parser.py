@@ -24,7 +24,9 @@ class TestHugoConfigParserModuleResolution:
 
             # Test direct match
             result = self.parser._scan_cache_for_module(
-                cache_dir, "golang.foundata.com/hugo-theme-dev", "v1.0.0",
+                cache_dir,
+                "golang.foundata.com/hugo-theme-dev",
+                "v1.0.0",
             )
 
             assert result == module_dir
@@ -41,7 +43,9 @@ class TestHugoConfigParserModuleResolution:
             v2_dir.mkdir()
 
             result = self.parser._scan_cache_for_module(
-                cache_dir, "example.com/theme", None,
+                cache_dir,
+                "example.com/theme",
+                None,
             )
 
             # Should return the lexicographically latest version (v2.0.0)
@@ -53,7 +57,9 @@ class TestHugoConfigParserModuleResolution:
             cache_dir = Path(temp_dir)
 
             result = self.parser._scan_cache_for_module(
-                cache_dir, "nonexistent.com/theme", "v1.0.0",
+                cache_dir,
+                "nonexistent.com/theme",
+                "v1.0.0",
             )
 
             assert result is None
@@ -76,14 +82,18 @@ class TestHugoConfigParserModuleResolution:
 
             # Test exact version match
             result = self.parser._scan_cache_for_module(
-                cache_dir, "example.com/theme", "v1.1.0",
+                cache_dir,
+                "example.com/theme",
+                "v1.1.0",
             )
             assert result is not None
             assert "v1.1.0" in result.name
 
             # Test latest version (no preferred)
             result = self.parser._scan_cache_for_module(
-                cache_dir, "example.com/theme", None,
+                cache_dir,
+                "example.com/theme",
+                None,
             )
             # Should get latest (lexicographically)
             assert result is not None
@@ -96,7 +106,9 @@ class TestHugoConfigParserModuleResolution:
 
             # Case 1: Empty cache directory
             result = self.parser._scan_cache_for_module(
-                cache_dir, "any/module", "v1.0.0",
+                cache_dir,
+                "any/module",
+                "v1.0.0",
             )
             assert result is None
 
@@ -105,6 +117,8 @@ class TestHugoConfigParserModuleResolution:
             (cache_dir / "another-dir").mkdir()
 
             result = self.parser._scan_cache_for_module(
-                cache_dir, "any/module", "v1.0.0",
+                cache_dir,
+                "any/module",
+                "v1.0.0",
             )
             assert result is None
