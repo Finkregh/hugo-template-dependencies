@@ -50,6 +50,7 @@ dev = [
     "types-toml>=0.10.8",
     "uv>=0.9.27",
     "mypy>=1.19.1",
+    "types-jsonschema>=4.26.0.20260202",
 ]
 
 [[tool.uv.index]]
