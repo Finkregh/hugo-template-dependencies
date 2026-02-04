@@ -254,9 +254,7 @@ class MermaidFormatter:
         }
         return labels.get(relationship, "")
 
-    def _sanitize_id(
-        self, node_id: str, node_data: dict[str, Any] | None = None
-    ) -> str:
+    def _sanitize_id(self, node_id: str, node_data: dict[str, Any] | None = None) -> str:
         """Sanitize node ID for Mermaid compatibility.
 
         Creates meaningful IDs by extracting relative path context with source prefixes:
@@ -366,12 +364,20 @@ class MermaidFormatter:
         sanitized_path = sanitized_path.replace("[", "").replace("]", "")
         sanitized_path = sanitized_path.replace(":", "_").replace("@", "_")
 
+        # Clean up consecutive underscores
+        import re
+
+        sanitized_path = re.sub(r"_+", "_", sanitized_path)
+
         # Handle leading underscores from paths like "_partials/file"
         while sanitized_path.startswith("_"):
             sanitized_path = sanitized_path[1:]
 
         # Combine source prefix with path
         full_id = f"{source_prefix}_{sanitized_path}"
+
+        # Clean up consecutive underscores again after combining
+        full_id = re.sub(r"_+", "_", full_id)
 
         # Ensure it starts with a letter or underscore
         if full_id and full_id[0].isdigit():

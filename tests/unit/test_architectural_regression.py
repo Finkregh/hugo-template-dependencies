@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Regression tests for the four critical architectural fixes:
+"""Regression tests for the four critical architectural fixes:
 
 1. Node ID mismatch between graph and formatters
 2. Missing node data in edge formatting
@@ -10,29 +9,27 @@ Regression tests for the four critical architectural fixes:
 These tests ensure the fixes don't regress as the codebase evolves.
 """
 
-import unittest
-import tempfile
-from pathlib import Path
-from unittest.mock import Mock, patch
 import sys
+import unittest
+from pathlib import Path
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from hugo_template_dependencies.analyzer.template_parser import HugoTemplateParser
 from hugo_template_dependencies.graph.hugo_graph import (
     HugoDependencyGraph,
     HugoTemplate,
     TemplateType,
 )
-from hugo_template_dependencies.output.mermaid_formatter import MermaidFormatter
 from hugo_template_dependencies.output.dot_formatter import DOTFormatter
-from hugo_template_dependencies.analyzer.template_parser import HugoTemplateParser
+from hugo_template_dependencies.output.mermaid_formatter import MermaidFormatter
 
 
 class TestArchitecturalFixes(unittest.TestCase):
     """Regression tests for critical architectural fixes."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up test fixtures."""
         self.graph = HugoDependencyGraph()
         self.parser = HugoTemplateParser()
@@ -47,7 +44,7 @@ class TestArchitecturalFixes(unittest.TestCase):
 
         self.module_template = HugoTemplate(
             file_path=Path(
-                "/cache/hugo-theme-component-ical/layouts/_partials/events/calendar-downloads.html"
+                "/cache/hugo-theme-component-ical/layouts/_partials/events/calendar-downloads.html",
             ),
             template_type=TemplateType.PARTIAL,
             content="<div>Downloads</div>",
@@ -58,9 +55,8 @@ class TestArchitecturalFixes(unittest.TestCase):
         self.graph.add_template(self.local_template)
         self.graph.add_template(self.module_template)
 
-    def test_regression_node_id_consistency(self):
-        """
-        Regression Test for Issue #1: Node ID mismatch between graph and formatters.
+    def test_regression_node_id_consistency(self) -> None:
+        """Regression Test for Issue #1: Node ID mismatch between graph and formatters.
 
         Before fix: Graph edges used absolute paths but formatters used sanitized IDs,
         causing edges to disappear in formatted output.
@@ -79,37 +75,26 @@ class TestArchitecturalFixes(unittest.TestCase):
         mermaid_edges = mermaid_formatter._get_formatted_edges()
 
         # Should have at least one properly formatted edge
-        self.assertGreater(
-            len(mermaid_edges), 0, "Mermaid formatter should produce edges"
-        )
+        assert len(mermaid_edges) > 0, "Mermaid formatter should produce edges"
 
         # Edge should not be empty (was the regression symptom)
         for edge in mermaid_edges:
-            self.assertNotRegex(
-                edge, r"-->.*\|\w+\|$", f"Edge target should not be empty: {edge}"
-            )
-            self.assertIn(
-                "-->|includes|", edge, "Edge should show includes relationship"
-            )
+            assert not re.search(r"-->.*\|\w+\|$", edge), f"Edge target should not be empty: {edge}"
+            assert "-->|includes|" in edge, "Edge should show includes relationship"
 
         # Test DOT formatter edge consistency
         dot_formatter = DOTFormatter(self.graph)
         dot_edges = dot_formatter._get_formatted_edges(include_styles=True)
 
         # Should have properly formatted DOT edges
-        self.assertGreater(len(dot_edges), 0, "DOT formatter should produce edges")
+        assert len(dot_edges) > 0, "DOT formatter should produce edges"
 
         # DOT edges should have valid source and target IDs
         for edge in dot_edges:
-            self.assertRegex(
-                edge,
-                r"\w+ -> \w+",
-                f"DOT edge should have valid source->target: {edge}",
-            )
+            assert re.search(r"\w+ -> \w+", edge), f"DOT edge should have valid source->target: {edge}"
 
-    def test_regression_node_data_in_edge_formatting(self):
-        """
-        Regression Test for Issue #2: Missing node data in edge formatting.
+    def test_regression_node_data_in_edge_formatting(self) -> None:
+        """Regression Test for Issue #2: Missing node data in edge formatting.
 
         Before fix: Formatters called _sanitize_id(source, None) losing source information.
 
@@ -127,38 +112,25 @@ class TestArchitecturalFixes(unittest.TestCase):
 
         # Test direct node data access
         for node_id, node_data in self.graph.graph.nodes(data=True):
-            self.assertIsNotNone(node_data, f"Node {node_id} should have data")
-            self.assertIn(
-                "source", node_data, f"Node {node_id} should have source information"
-            )
+            assert node_data is not None, f"Node {node_id} should have data"
+            assert "source" in node_data, f"Node {node_id} should have source information"
 
             # Test sanitized ID creation with proper node data
             sanitized_id = formatter._sanitize_id(node_id, node_data)
 
             # Should not produce broken IDs like "___"
-            self.assertNotIn(
-                "___",
-                sanitized_id,
-                f"Sanitized ID should not contain '___': {sanitized_id}",
-            )
+            assert "___" not in sanitized_id, f"Sanitized ID should not contain '___': {sanitized_id}"
 
             # Local templates should have local_ prefix
             if node_data["source"] == "local":
-                self.assertTrue(
-                    sanitized_id.startswith("local_"),
-                    f"Local template should have local_ prefix: {sanitized_id}",
-                )
+                assert sanitized_id.startswith("local_"), f"Local template should have local_ prefix: {sanitized_id}"
 
             # Module templates should not start with underscores from path issues
             elif node_data["source"] != "local":
-                self.assertFalse(
-                    sanitized_id.startswith("___"),
-                    f"Module template should not start with '___': {sanitized_id}",
-                )
+                assert not sanitized_id.startswith("___"), f"Module template should not start with '___': {sanitized_id}"
 
-    def test_regression_template_parser_assignment_patterns(self):
-        """
-        Regression Test for Issue #4: Template parser regex limitations with := assignments.
+    def test_regression_template_parser_assignment_patterns(self) -> None:
+        """Regression Test for Issue #4: Template parser regex limitations with := assignments.
 
         Before fix: Regex didn't handle Hugo's := variable assignment syntax.
 
@@ -188,32 +160,16 @@ class TestArchitecturalFixes(unittest.TestCase):
                 partial_deps = [dep for dep in dependencies if dep["type"] == "partial"]
 
                 if isinstance(expected, list):
-                    self.assertEqual(
-                        len(partial_deps),
-                        len(expected),
-                        f"Should find {len(expected)} partials in: {content}",
-                    )
+                    assert len(partial_deps) == len(expected), f"Should find {len(expected)} partials in: {content}"
                     actual_targets = [dep["target"] for dep in partial_deps]
                     for exp_target in expected:
-                        self.assertIn(
-                            exp_target,
-                            actual_targets,
-                            f"Should find target '{exp_target}' in: {content}",
-                        )
+                        assert exp_target in actual_targets, f"Should find target '{exp_target}' in: {content}"
                 else:
-                    self.assertEqual(
-                        len(partial_deps), 1, f"Should find 1 partial in: {content}"
-                    )
-                    self.assertEqual(
-                        partial_deps[0]["target"],
-                        expected,
-                        f"Target should be '{expected}' in: {content}",
-                    )
+                    assert len(partial_deps) == 1, f"Should find 1 partial in: {content}"
+                    assert partial_deps[0]["target"] == expected, f"Target should be '{expected}' in: {content}"
 
-    def test_regression_complex_assignment_edge_cases(self):
-        """
-        Additional regression test for complex assignment patterns that could break.
-        """
+    def test_regression_complex_assignment_edge_cases(self) -> None:
+        """Additional regression test for complex assignment patterns that could break."""
         edge_cases = [
             # Nested assignments with complex parameters
             '{{- $data := partial "api/resolver.html" (dict "endpoint" .Params.api "cache" true "timeout" 30) -}}',
@@ -232,25 +188,15 @@ class TestArchitecturalFixes(unittest.TestCase):
                 partial_deps = [dep for dep in dependencies if dep["type"] == "partial"]
 
                 # Should find at least one partial in each case
-                self.assertGreater(
-                    len(partial_deps),
-                    0,
-                    f"Should find at least 1 partial in edge case: {content}",
-                )
+                assert len(partial_deps) > 0, f"Should find at least 1 partial in edge case: {content}"
 
                 # All found partials should have valid targets
                 for dep in partial_deps:
-                    self.assertTrue(
-                        dep["target"], f"Partial target should not be empty: {dep}"
-                    )
-                    self.assertTrue(
-                        dep["target"].endswith(".html"),
-                        f"Partial target should end with .html: {dep['target']}",
-                    )
+                    assert dep["target"], f"Partial target should not be empty: {dep}"
+                    assert dep["target"].endswith(".html"), f"Partial target should end with .html: {dep['target']}"
 
-    def test_regression_end_to_end_integration(self):
-        """
-        Integration test ensuring all four fixes work together end-to-end.
+    def test_regression_end_to_end_integration(self) -> None:
+        """Integration test ensuring all four fixes work together end-to-end.
 
         This test simulates the real-world scenario that was failing:
         - Module template with := assignment calls
@@ -261,7 +207,7 @@ class TestArchitecturalFixes(unittest.TestCase):
         # Create a complex template with := assignments (Issue #4 fix)
         complex_template = HugoTemplate(
             file_path=Path(
-                "/cache/module/layouts/_partials/recurrence/yearly_frequency.html"
+                "/cache/module/layouts/_partials/recurrence/yearly_frequency.html",
             ),
             template_type=TemplateType.PARTIAL,
             content="""
@@ -275,7 +221,7 @@ class TestArchitecturalFixes(unittest.TestCase):
         # Create target templates
         target1 = HugoTemplate(
             file_path=Path(
-                "/cache/module/layouts/_partials/recurrence/day_names_resolver.html"
+                "/cache/module/layouts/_partials/recurrence/day_names_resolver.html",
             ),
             template_type=TemplateType.PARTIAL,
             content="<div>Day resolver</div>",
@@ -284,7 +230,7 @@ class TestArchitecturalFixes(unittest.TestCase):
 
         target2 = HugoTemplate(
             file_path=Path(
-                "/cache/module/layouts/_partials/recurrence/interval_formatter.html"
+                "/cache/module/layouts/_partials/recurrence/interval_formatter.html",
             ),
             template_type=TemplateType.PARTIAL,
             content="<div>Interval formatter</div>",
@@ -310,7 +256,7 @@ class TestArchitecturalFixes(unittest.TestCase):
         partial_deps = [dep for dep in dependencies if dep["type"] == "partial"]
 
         # Should find all 3 partial calls (including := assignments)
-        self.assertEqual(len(partial_deps), 3, "Should find all 3 partial dependencies")
+        assert len(partial_deps) == 3, "Should find all 3 partial dependencies"
 
         expected_targets = {
             "recurrence/day_names_resolver.html",
@@ -318,9 +264,7 @@ class TestArchitecturalFixes(unittest.TestCase):
             "components/helper.html",
         }
         actual_targets = {dep["target"] for dep in partial_deps}
-        self.assertEqual(
-            actual_targets, expected_targets, "Should find all expected targets"
-        )
+        assert actual_targets == expected_targets, "Should find all expected targets"
 
         # Create graph edges (tests Issue #1 and #2 fixes)
         for dep in partial_deps:
@@ -340,38 +284,25 @@ class TestArchitecturalFixes(unittest.TestCase):
 
         # Verify graph has proper edges
         edges = list(self.graph.graph.edges(data=True))
-        self.assertEqual(len(edges), 3, "Should have 3 edges in graph")
+        assert len(edges) == 3, "Should have 3 edges in graph"
 
         # Test formatter output (tests Issue #1 and #2 fixes)
         formatter = MermaidFormatter(self.graph)
         formatted_edges = formatter._get_formatted_edges()
 
         # Should have properly formatted edges with no empty targets
-        self.assertGreater(len(formatted_edges), 0, "Should have formatted edges")
+        assert len(formatted_edges) > 0, "Should have formatted edges"
         for edge in formatted_edges:
-            self.assertNotRegex(
-                edge, r"-->.*\|\w+\|$", f"Edge should not have empty target: {edge}"
-            )
+            assert not re.search(r"-->.*\|\w+\|$", edge), f"Edge should not have empty target: {edge}"
 
         # All edges should connect to properly prefixed node IDs
         for edge in formatted_edges:
             if "yearly_frequency" in edge:
                 # Should connect to other module templates and local template
-                self.assertTrue(
-                    any(
-                        target in edge
-                        for target in [
-                            "day_names_resolver",
-                            "interval_formatter",
-                            "local_",
-                        ]
-                    ),
-                    f"yearly_frequency edge should connect to expected targets: {edge}",
-                )
+                assert any(target in edge for target in ["day_names_resolver", "interval_formatter", "local_"]), f"yearly_frequency edge should connect to expected targets: {edge}"
 
-    def test_regression_duplicate_resolution_prevention(self):
-        """
-        Regression Test for Issue #3: Duplicate dependency resolution loop.
+    def test_regression_duplicate_resolution_prevention(self) -> None:
+        """Regression Test for Issue #3: Duplicate dependency resolution loop.
 
         Before fix: Two identical dependency resolution loops caused performance issues
         and potential data corruption in module template processing.
@@ -426,15 +357,11 @@ class TestArchitecturalFixes(unittest.TestCase):
                 )
 
         # Should be called exactly once per dependency (no duplicate resolution)
-        self.assertEqual(
-            call_count,
-            1,
-            "add_include_dependency should be called exactly once per dependency",
-        )
+        assert call_count == 1, "add_include_dependency should be called exactly once per dependency"
 
         # Verify the edge was created properly
         edges = list(self.graph.graph.edges())
-        self.assertEqual(len(edges), 1, "Should have exactly one edge")
+        assert len(edges) == 1, "Should have exactly one edge"
 
 
 if __name__ == "__main__":

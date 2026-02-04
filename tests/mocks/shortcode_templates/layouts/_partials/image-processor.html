@@ -1,0 +1,16 @@
+{{ $src := .src }}
+{{ $alt := .alt | default "Image" }}
+{{ $class := .class | default "img" }}
+
+{{ if hasPrefix $src "http" }}
+    <img src="{{ $src }}" alt="{{ $alt }}" class="{{ $class }}" loading="lazy">
+{{ else }}
+    {{ $image := resources.Get $src }}
+    {{ if $image }}
+        {{ $processed := $image.Resize "800x" }}
+        <img src="{{ $processed.RelPermalink }}" alt="{{ $alt }}" class="{{ $class }}" 
+             width="{{ $processed.Width }}" height="{{ $processed.Height }}" loading="lazy">
+    {{ else }}
+        <img src="{{ $src }}" alt="{{ $alt }}" class="{{ $class }}" loading="lazy">
+    {{ end }}
+{{ end }}

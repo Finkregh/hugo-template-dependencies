@@ -1,0 +1,11 @@
+{{ $src := .Get "src" | default (.Get 0) }}
+{{ $alt := .Get "alt" | default (.Get 1) }}
+{{ $caption := .Get "caption" | default .Inner }}
+{{ $class := .Get "class" | default "figure" }}
+
+<figure class="{{ $class }}">
+    {{ partial "image-processor.html" (dict "src" $src "alt" $alt "class" "figure-img") }}
+    {{ if $caption }}
+    <figcaption>{{ $caption | markdownify }}</figcaption>
+    {{ end }}
+</figure>

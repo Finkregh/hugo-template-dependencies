@@ -12,11 +12,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-try:
-    import jsonschema
-except ImportError:
-    jsonschema = None
-
+import jsonschema
 
 if TYPE_CHECKING:
     from hugo_template_dependencies.graph.base import GraphBase
@@ -111,16 +107,9 @@ class JSONFormatter:
 
         """
         self.graph = graph
-        self._schema_validator = None
-
-        # Initialize schema validator if jsonschema is available
-        if jsonschema is not None:
-            try:
-                self._schema_validator = jsonschema.Draft7Validator(
-                    self.HUGO_JSON_SCHEMA,
-                )
-            except Exception:
-                self._schema_validator = None
+        self._schema_validator = jsonschema.Draft7Validator(
+            self.HUGO_JSON_SCHEMA,
+        )
 
     def format_graph(
         self,
@@ -209,8 +198,6 @@ class JSONFormatter:
     def validate_json_schema(self, json_data: dict[str, Any]) -> dict[str, Any]:
         """Validate JSON data against the Hugo dependencies schema.
 
-        Uses jsonschema library if available, falls back to manual validation.
-
         Args:
             json_data: JSON data to validate
 
@@ -221,24 +208,21 @@ class JSONFormatter:
         errors = []
         warnings = []
 
-        # Use jsonschema validator if available
-        if self._schema_validator is not None:
-            try:
-                # Validate against schema
-                validation_errors = sorted(
-                    self._schema_validator.iter_errors(json_data),
-                    key=lambda e: e.path,
+        try:
+            # Validate against schema
+            validation_errors = sorted(
+                self._schema_validator.iter_errors(json_data),
+                key=lambda e: e.path,
+            )
+            for error in validation_errors:
+                error_path = (
+                    " -> ".join(str(p) for p in error.path) if error.path else "root"
                 )
-                for error in validation_errors:
-                    error_path = " -> ".join(str(p) for p in error.path) if error.path else "root"
-                    errors.append(
-                        f"Schema validation error at '{error_path}': {error.message}",
-                    )
-            except Exception as e:
-                errors.append(f"Schema validation failed: {e}")
-        else:
-            # Fallback to manual validation
-            errors.extend(self._manual_validate(json_data))
+                errors.append(
+                    f"Schema validation error at '{error_path}': {error.message}",
+                )
+        except Exception as e:
+            errors.append(f"Schema validation failed: {e}")
 
         # Additional consistency checks
         warnings.extend(self._consistency_checks(json_data))
@@ -248,66 +232,6 @@ class JSONFormatter:
             "errors": errors,
             "warnings": warnings,
         }
-
-    def _manual_validate(self, json_data: dict[str, Any]) -> list[str]:
-        """Manual validation when jsonschema is not available.
-
-        Args:
-            json_data: JSON data to validate
-
-        Returns:
-            List of validation errors
-
-        """
-        errors = []
-
-        # Check required top-level fields
-        required_fields = ["nodes", "edges", "metadata"]
-        for field in required_fields:
-            if field not in json_data:
-                errors.append(f"Missing required field: {field}")
-
-        # Validate nodes structure
-        if "nodes" in json_data:
-            for i, node in enumerate(json_data["nodes"]):
-                if not isinstance(node, dict):
-                    errors.append(f"Node {i} must be an object")
-                    continue
-
-                if "id" not in node:
-                    errors.append(f"Node {i} missing required 'id' field")
-
-                if "type" not in node:
-                    errors.append(f"Node {i} missing required 'type' field")
-
-        # Validate edges structure
-        if "edges" in json_data:
-            for i, edge in enumerate(json_data["edges"]):
-                if not isinstance(edge, dict):
-                    errors.append(f"Edge {i} must be an object")
-                    continue
-
-                if "source" not in edge:
-                    errors.append(f"Edge {i} missing required 'source' field")
-
-                if "target" not in edge:
-                    errors.append(f"Edge {i} missing required 'target' field")
-
-                if "relationship" not in edge:
-                    errors.append(f"Edge {i} missing required 'relationship' field")
-
-        # Validate metadata structure
-        if "metadata" in json_data:
-            metadata = json_data["metadata"]
-            if not isinstance(metadata, dict):
-                errors.append("Metadata must be an object")
-            else:
-                required_meta_fields = ["generator", "totalNodes", "totalEdges"]
-                for field in required_meta_fields:
-                    if field not in metadata:
-                        errors.append(f"Metadata missing required field: {field}")
-
-        return errors
 
     def _consistency_checks(self, json_data: dict[str, Any]) -> list[str]:
         """Perform consistency checks on the JSON data.
@@ -551,7 +475,9 @@ class JSONFormatter:
         edge_relationships = {}
         for _, _, data in self.graph.graph.edges(data=True):
             relationship = data.get("relationship", "unknown")
-            edge_relationships[relationship] = edge_relationships.get(relationship, 0) + 1
+            edge_relationships[relationship] = (
+                edge_relationships.get(relationship, 0) + 1
+            )
         stats["edge_relationships"] = edge_relationships
 
         # Cycle information

@@ -1,0 +1,14 @@
+{{ define "main" }}
+<article class="post">
+    <header>
+        {{ partial "meta/article-info.html" (dict "context" . "scope" "single" "showDate" true) }}
+        {{ if .Params.author }}
+            {{ partial "meta/author-info.html" .Params.author }}
+        {{ end }}
+    </header>
+    
+    <div class="content">
+        {{ .Content }}
+    </div>
+</article>
+{{ end }}

@@ -1,0 +1,45 @@
+{{/* Tags and categories display with icons */}}
+<div class="taxonomy-meta">
+    {{ if .categories }}
+        <div class="categories">
+            {{ if .useIcons }}
+                {{ partial "shared/icon.html" (dict "name" "folder" "class" "category-icon") }}
+            {{ end }}
+            <span class="taxonomy-label">Categories:</span>
+            {{ range $index, $category := .categories }}
+                {{ if $index }}, {{ end }}
+                <a href="{{ "/categories/" | relLangURL }}{{ $category | urlize }}" class="category-link" rel="category">
+                    {{ $category }}
+                </a>
+            {{ end }}
+        </div>
+    {{ end }}
+
+    {{ if .tags }}
+        <div class="tags">
+            {{ if .useIcons }}
+                {{ partial "shared/icon.html" (dict "name" "tag" "class" "tag-icon") }}
+            {{ end }}
+            <span class="taxonomy-label">Tags:</span>
+            {{ range $index, $tag := .tags }}
+                {{ if $index }}, {{ end }}
+                <a href="{{ "/tags/" | relLangURL }}{{ $tag | urlize }}" class="tag-link" rel="tag">
+                    {{ $tag }}
+                </a>
+            {{ end }}
+        </div>
+    {{ end }}
+
+    {{/* Series information if available */}}
+    {{ if .context.Params.series }}
+        <div class="series">
+            {{ if .useIcons }}
+                {{ partial "shared/icon.html" (dict "name" "book" "class" "series-icon") }}
+            {{ end }}
+            <span class="taxonomy-label">Series:</span>
+            <a href="{{ "/series/" | relLangURL }}{{ .context.Params.series | urlize }}" class="series-link">
+                {{ .context.Params.series }}
+            </a>
+        </div>
+    {{ end }}
+</div>

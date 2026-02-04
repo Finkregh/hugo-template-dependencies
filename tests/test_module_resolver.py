@@ -60,7 +60,7 @@ class TestModuleReplacements:
     """Test module replacement resolution."""
 
     def test_replacement_as_local_path(
-        self, temp_project: Path, temp_cache: Path
+        self, temp_project: Path, temp_cache: Path,
     ) -> None:
         """Test replacement resolves to local relative path."""
         # Setup: Create parent theme at ../../..
@@ -102,7 +102,7 @@ class TestModuleReplacements:
         assert (resolved / "layouts" / "baseof.html").exists()
 
     def test_replacement_fallback_to_cache(
-        self, temp_project: Path, temp_cache: Path
+        self, temp_project: Path, temp_cache: Path,
     ) -> None:
         """Test replacement falls back to cachedir when local path doesn't exist."""
         # Setup: Create module in cache
@@ -187,7 +187,7 @@ class TestRemoteModuleResolution:
         assert resolved == module_dir
 
     def test_version_suffix_stripping(
-        self, temp_project: Path, temp_cache: Path
+        self, temp_project: Path, temp_cache: Path,
     ) -> None:
         """Test version suffix like +vendor is handled."""
         # Hugo mod graph reports: github.com/foo/bar@v1.0.0+vendor
@@ -238,7 +238,7 @@ class TestHierarchicalCacheStructure:
     """Test hierarchical cache directory handling."""
 
     def test_hierarchical_cache_format(
-        self, temp_project: Path, temp_cache: Path
+        self, temp_project: Path, temp_cache: Path,
     ) -> None:
         """Test resolving from hierarchical cache (domain/module@version)."""
         # Create hierarchical structure

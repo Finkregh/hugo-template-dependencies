@@ -1,0 +1,60 @@
+{{/* Custom event tracking for user interactions */}}
+{{ $eventName := .event | default "custom_event" }}
+{{ $eventCategory := .category | default "engagement" }}
+{{ $eventElement := .element | default "" }}
+{{ $eventUrl := .url | default "" }}
+{{ $eventData := .data | default (dict) }}
+
+{{/* Client-side event tracking script */}}
+<script>
+(function() {
+    // Custom analytics event dispatcher
+    const trackEvent = {
+        name: '{{ $eventName | safeJS }}',
+        category: '{{ $eventCategory | safeJS }}',
+        element: '{{ $eventElement | safeJS }}',
+        url: '{{ $eventUrl | safeJS }}',
+        timestamp: new Date().toISOString(),
+        page: {
+            title: '{{ .context.Title | safeJS }}',
+            url: '{{ .context.Permalink | safeJS }}',
+            type: '{{ .context.Type | safeJS }}',
+            section: '{{ .context.Section | safeJS }}'
+        },
+        data: {
+            {{ range $key, $value := $eventData }}
+            '{{ $key }}': '{{ $value | safeJS }}',
+            {{ end }}
+        }
+    };
+
+    // Send to multiple analytics providers
+    {{ if .context.Site.Params.analytics.google.id }}
+    // Google Analytics 4
+    if (typeof gtag !== 'undefined') {
+        gtag('event', trackEvent.name, {
+            'event_category': trackEvent.category,
+            'event_label': trackEvent.element,
+            'custom_data': trackEvent.data
+        });
+    }
+    {{ end }}
+
+    {{ if .context.Site.Params.analytics.custom.enabled }}
+    // Custom analytics endpoint
+    fetch('{{ .context.Site.Params.analytics.custom.endpoint }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(trackEvent)
+    }).catch(function(error) {
+        console.warn('Analytics tracking failed:', error);
+    });
+    {{ end }}
+
+    {{ if .context.Site.Params.analytics.debug }}
+    console.log('Analytics Event:', trackEvent);
+    {{ end }}
+})();
+</script>

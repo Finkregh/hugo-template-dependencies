@@ -1,0 +1,15 @@
+<div class="article-meta scope-{{ .scope }}">
+    <h1>{{ .context.Title }}</h1>
+    {{ if .showDate }}
+    <time datetime="{{ .context.Date.Format "2006-01-02" }}">
+        Published: {{ .context.Date.Format "January 2, 2006" }}
+    </time>
+    {{ end }}
+    {{ if .context.Params.tags }}
+    <div class="tags">
+        {{ range .context.Params.tags }}
+        <span class="tag">{{ . }}</span>
+        {{ end }}
+    </div>
+    {{ end }}
+</div>

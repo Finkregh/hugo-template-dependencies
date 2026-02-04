@@ -1,0 +1,10 @@
+<div class="card-layout">
+    <div class="cards-grid">
+        {{ range .Pages }}
+        <article class="card">
+            <h3><a href="{{ .RelPermalink }}">{{ .Title }}</a></h3>
+            <p>{{ .Summary }}</p>
+        </article>
+        {{ end }}
+    </div>
+</div>

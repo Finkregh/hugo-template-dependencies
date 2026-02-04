@@ -1,0 +1,19 @@
+{{/* Publication date display with schema markup */}}
+<div class="published-meta">
+    <time class="published-date" datetime="{{ .context.Date.Format "2006-01-02T15:04:05Z07:00" }}" itemprop="datePublished">
+        {{ partial "shared/icon.html" (dict "name" "calendar" "class" "date-icon") }}
+        <span class="date-text">{{ .context.Date.Format .dateFormat }}</span>
+    </time>
+
+    {{ if .showModified }}
+        <time class="modified-date" datetime="{{ .context.Lastmod.Format "2006-01-02T15:04:05Z07:00" }}" itemprop="dateModified">
+            {{ partial "shared/icon.html" (dict "name" "edit" "class" "modified-icon") }}
+            <span class="date-text">Updated: {{ .context.Lastmod.Format .dateFormat }}</span>
+        </time>
+    {{ end }}
+
+    {{/* Word count and reading time */}}
+    <div class="content-stats">
+        <span class="word-count">{{ .context.WordCount }} words</span>
+    </div>
+</div>

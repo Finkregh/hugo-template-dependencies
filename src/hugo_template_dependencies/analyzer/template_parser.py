@@ -57,7 +57,7 @@ class HugoTemplateParser:
         self.patterns = {
             # Core template functions - Fixed to handle := variable assignments
             "partial": re.compile(
-                r'{{\s*-?\s*(?:\$\w+\s*:?=\s*)?partial\s+"([^"]+)"\s*([^}]*?)\s*-?\s*}}',
+                r'{{\s*-?\s*(?:\$\w+\s*:?=\s*)?partial\s*"([^"]+)"\s*([^}]*?)\s*-?\s*}}',
             ),
             "template": re.compile(
                 r'{{\s*-?\s*(?:\$\w+\s*:?=\s*)?template\s+"([^"]+)"\s*([^}]*?)\s*-?\s*}}',
@@ -384,11 +384,7 @@ class HugoTemplateParser:
         # Extract block usage with enhanced tracking
         for match in self.patterns["block_use"].finditer(content):
             block_name = match.group(1)
-            block_params = (
-                match.group(2).strip()
-                if len(match.groups()) >= 2 and match.group(2)
-                else ""
-            )
+            block_params = match.group(2).strip() if len(match.groups()) >= 2 and match.group(2) else ""
             block_content = match.group(3) if len(match.groups()) >= 3 else ""
 
             line_number = self._get_accurate_line_number(content, match.start())
@@ -592,9 +588,7 @@ class HugoTemplateParser:
         is_partial = "_partials" in file_path.parts or "partials" in file_path.parts
 
         # Check for shortcodes directory
-        is_shortcode = (
-            "_shortcodes" in file_path.parts or "shortcodes" in file_path.parts
-        )
+        is_shortcode = "_shortcodes" in file_path.parts or "shortcodes" in file_path.parts
 
         if is_partial:
             return TemplateType.PARTIAL

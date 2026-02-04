@@ -1,0 +1,33 @@
+{{/* Reusable button component with analytics integration */}}
+{{ $buttonText := .text | default "Button" }}
+{{ $buttonUrl := .url }}
+{{ $buttonClass := .class | default "btn" }}
+{{ $buttonStyle := .style | default "primary" }}
+{{ $trackEvent := .trackEvent | default false }}
+
+<a href="{{ $buttonUrl }}" 
+   class="{{ $buttonClass }} btn-{{ $buttonStyle }}"
+   {{ if .target }}target="{{ .target }}"{{ end }}
+   {{ if .rel }}rel="{{ .rel }}"{{ end }}
+   {{ if $trackEvent }}data-track-event="{{ $trackEvent }}" data-track-url="{{ $buttonUrl }}"{{ end }}>
+    
+    {{ if .icon }}
+        {{ partial "shared/icon.html" (dict "name" .icon "class" "btn-icon") }}
+    {{ end }}
+    
+    <span class="btn-text">{{ $buttonText }}</span>
+    
+    {{ if eq .style "external" }}
+        {{ partial "shared/icon.html" (dict "name" "external" "class" "external-icon") }}
+    {{ end }}
+</a>
+
+{{/* Track button click if analytics enabled */}}
+{{ if and $trackEvent .enableTracking }}
+    {{ partial "analytics/events.html" (dict 
+        "event" "button_click" 
+        "element" $buttonText
+        "url" $buttonUrl
+        "category" (.category | default "interaction")
+    ) }}
+{{ end }}

@@ -1,0 +1,56 @@
+{{/* Analytics tracker for page views and events - similar to Blowfish pattern */}}
+{{ $eventType := .event | default "page_view" }}
+{{ $eventData := .metadata | default (dict) }}
+
+{{/* Google Analytics 4 tracking */}}
+{{ if .context.Site.Params.analytics.google.id }}
+    <script>
+        // Track {{ $eventType }} event
+        gtag('event', '{{ $eventType }}', {
+            'page_title': '{{ .context.Title | safeJS }}',
+            'page_location': '{{ .context.Permalink | safeJS }}',
+            'content_group1': '{{ .context.Type | safeJS }}',
+            'content_group2': '{{ .context.Section | safeJS }}',
+            {{ range $key, $value := $eventData }}
+            '{{ $key }}': '{{ $value | safeJS }}',
+            {{ end }}
+            'send_to': '{{ .context.Site.Params.analytics.google.id }}'
+        });
+    </script>
+{{ end }}
+
+{{/* Adobe Analytics tracking */}}
+{{ if .context.Site.Params.analytics.adobe.enabled }}
+    <script>
+        s.events = "{{ $eventType }}";
+        s.pageName = "{{ .context.Title | safeJS }}";
+        s.channel = "{{ .context.Section | safeJS }}";
+        s.prop1 = "{{ .context.Type | safeJS }}";
+        {{ range $key, $value := $eventData }}
+        s.eVar{{ add 1 (index $.context.Site.Params.analytics.adobe.evars $key) }} = "{{ $value | safeJS }}";
+        {{ end }}
+        s.t();
+    </script>
+{{ end }}
+
+{{/* Custom analytics implementation */}}
+{{ if .context.Site.Params.analytics.custom.enabled }}
+    {{ partial "analytics/events.html" (dict 
+        "event" $eventType 
+        "data" $eventData
+        "context" .context
+    ) }}
+{{ end }}
+
+{{/* Debug mode output */}}
+{{ if .context.Site.Params.analytics.debug }}
+    <div class="analytics-debug" style="display: none;">
+        Event: {{ $eventType }}<br>
+        Page: {{ .context.Title }}<br>
+        Type: {{ .context.Type }}<br>
+        Section: {{ .context.Section }}<br>
+        {{ range $key, $value := $eventData }}
+        {{ $key }}: {{ $value }}<br>
+        {{ end }}
+    </div>
+{{ end }}

@@ -1,0 +1,11 @@
+<div class="author-info">
+    <div class="author-details">
+        <h3>By {{ .name | default .Name }}</h3>
+        {{ if .bio }}
+        <p class="author-bio">{{ .bio }}</p>
+        {{ end }}
+        {{ if .email }}
+        <a href="mailto:{{ .email }}" class="author-email">Contact</a>
+        {{ end }}
+    </div>
+</div>
