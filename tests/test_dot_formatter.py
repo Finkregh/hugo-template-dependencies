@@ -6,7 +6,8 @@ from pathlib import Path
 import pytest
 
 from hugo_template_dependencies.output.dot_formatter import DOTFormatter
-from tests.conftest import MockGraph
+
+from .conftest import MockGraph
 
 
 @pytest.fixture
