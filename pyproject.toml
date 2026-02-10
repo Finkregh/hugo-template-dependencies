@@ -51,6 +51,7 @@ dev = [
     "uv>=0.9.27",
     "mypy>=1.19.1",
     "types-jsonschema>=4.26.0.20260202",
+    "types-networkx>=3.6.1.20251220",
 ]
 
 [[tool.uv.index]]
@@ -81,6 +82,8 @@ ignore = [
     "FA100",  # see above
     "UP015",  # Unnecessary open mode parameters
     "PTH123", # `open()` should be replaced by `Path.open()`
+    "C901", # complexity
+    "TRY301", #Abstract `raise` to an inner function
 ]
 
 [tool.ruff.lint.per-file-ignores]
