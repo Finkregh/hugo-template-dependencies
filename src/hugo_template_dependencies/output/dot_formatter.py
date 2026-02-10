@@ -196,7 +196,9 @@ class DOTFormatter:
             target_id = self._sanitize_id(node_id=target, node_data=target_data)
 
             if include_styles:
-                attributes = self._get_edge_attributes(relationship=relationship, data=data)
+                attributes = self._get_edge_attributes(
+                    relationship=relationship, data=data,
+                )
                 attributes_str = f" [{attributes}]" if attributes else ""
             else:
                 attributes_str = f' [label="{relationship}"]'
@@ -264,7 +266,9 @@ class DOTFormatter:
 
                 if include_styles:
                     # Use appropriate style based on group type
-                    subgraph_style = self._get_cluster_style_for_group(group_key=group_key)
+                    subgraph_style = self._get_cluster_style_for_group(
+                        group_key=group_key,
+                    )
                     subgraph_lines.append("        style = filled;")
                     fillcolor = subgraph_style.split('fillcolor="')[1].split('"')[0]
                     subgraph_lines.append(f'        fillcolor = "{fillcolor}";')
@@ -275,7 +279,9 @@ class DOTFormatter:
                     label = self._get_node_label(node_id=node_id, data=data)
                     sanitized_id = self._sanitize_id(node_id=node_id, node_data=data)
                     if include_styles:
-                        attributes = self._get_node_attributes(node_type=node_type, data=data)
+                        attributes = self._get_node_attributes(
+                            node_type=node_type, data=data,
+                        )
                         attributes_str = f" [{attributes}]" if attributes else ""
                     else:
                         attributes_str = f' [label="{label}"]'
@@ -585,10 +591,9 @@ class DOTFormatter:
         if node_id.startswith("module:"):
             module_path = node_id[7:]  # Remove "module:" prefix
             # Extract module name (last part of path)
-            if "/" in module_path:
-                module_name = module_path.split("/")[-1]
-            else:
-                module_name = module_path
+            module_name = (
+                module_path.split("/")[-1] if "/" in module_path else module_path
+            )
             # Sanitize module name
             sanitized = module_name.replace("-", "_").replace(".", "_")
             return f"mod_{sanitized}"
@@ -642,10 +647,9 @@ class DOTFormatter:
                 layouts_index = parts.index("layouts")
                 # Get path relative to layouts directory
                 relative_parts = parts[layouts_index + 1 :]
-                if relative_parts:
-                    meaningful_path = "/".join(relative_parts)
-                else:
-                    meaningful_path = path_obj.name
+                meaningful_path = (
+                    "/".join(relative_parts) if relative_parts else path_obj.name
+                )
             # Fallback: use just the filename with parent directory for context
             elif len(parts) >= 2:
                 meaningful_path = f"{parts[-2]}/{parts[-1]}"

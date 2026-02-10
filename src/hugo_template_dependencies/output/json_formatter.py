@@ -137,12 +137,12 @@ class JSONFormatter:
 
         # Add nodes
         graph_data["nodes"] = self._get_formatted_nodes(
-            include_metadata=include_metadata
+            include_metadata=include_metadata,
         )
 
         # Add edges
         graph_data["edges"] = self._get_formatted_edges(
-            include_metadata=include_metadata
+            include_metadata=include_metadata,
         )
 
         # Add statistics if requested

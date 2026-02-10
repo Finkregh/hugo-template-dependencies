@@ -448,7 +448,7 @@ class TestMermaidFormatter:
         result = mermaid_formatter._sanitize_id(node_id="123template")
 
         # Should add prefix for numeric start
-        assert result.startswith("n_") or result.startswith("local_")
+        assert result.startswith(("n_", "local_"))
 
     def test_sanitize_id_handles_empty(
         self,
@@ -663,4 +663,5 @@ class TestMermaidFormatter:
         # Should handle special characters
         assert "special" in result.lower()
         # Quotes in labels should be escaped or handled
-        assert "[" in result and "]" in result
+        assert "[" in result
+        assert "]" in result

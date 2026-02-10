@@ -12,9 +12,10 @@ from collections import defaultdict
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from hugo_template_dependencies.graph.hugo_graph import HugoDependencyGraph
+
 if TYPE_CHECKING:
     from hugo_template_dependencies.graph.base import GraphBase
-    from hugo_template_dependencies.graph.hugo_graph import HugoDependencyGraph
 
 
 class MermaidFormatter:
@@ -79,7 +80,9 @@ class MermaidFormatter:
 
         for node_id, data in self.graph.graph.nodes(data=True):
             label = self._get_node_label(
-                node_id, data, include_metadata=include_metadata
+                node_id,
+                data,
+                include_metadata=include_metadata,
             )
             node_type = data.get("type", "unknown")
 

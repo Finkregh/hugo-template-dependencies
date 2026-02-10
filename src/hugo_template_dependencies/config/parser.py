@@ -551,7 +551,7 @@ class HugoConfigParser:
                                     )
                                     matching_dirs.append(match)
                                     domain_matches.append(
-                                        str(match.relative_to(cache_base))
+                                        str(match.relative_to(cache_base)),
                                     )
 
                             if not domain_matches:

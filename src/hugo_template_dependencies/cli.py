@@ -252,7 +252,7 @@ def analyze(  # noqa: PLR0912, PLR0915, PLR0913
 
         if effective_verbose and not quiet and not less_verbose:
             status_console.print(
-                f"[green]✅ Found {len(templates)} template files[/green]"
+                f"[green]✅ Found {len(templates)} template files[/green]",
             )
 
         # Start comprehensive progress tracking for parsing and analysis
@@ -511,12 +511,10 @@ def analyze(  # noqa: PLR0912, PLR0915, PLR0913
                     status_console.print(
                         f"[green]{description} saved to:[/green] {output_file}",
                     )
-            else:
-                # When not using -o: status messages go to stderr, content to stdout
-                if not quiet and description != "Output":
-                    status_console.print(f"[blue]{description}:[/blue]")
+            # When not using -o: status messages go to stderr, content to stdout
+            elif not quiet and description != "Output":
+                status_console.print(f"[blue]{description}:[/blue]")
                 # Content always goes to stdout for piping/redirection
-                print(content)
 
         if format == "tree":
             tree = Tree(f"📁 Hugo Project: {project_path.name}")
@@ -546,11 +544,11 @@ def analyze(  # noqa: PLR0912, PLR0915, PLR0913
                 file_console.file.close()
                 if not quiet:
                     status_console.print(
-                        f"[green]Tree output saved to:[/green] {output_file}"
+                        f"[green]Tree output saved to:[/green] {output_file}",
                     )
             else:
                 # Tree output goes to stdout (via regular console)
-                print(tree)
+                pass
 
         elif format == "mermaid":
             formatter = MermaidFormatter(graph)
@@ -567,7 +565,7 @@ def analyze(  # noqa: PLR0912, PLR0915, PLR0913
                 )
                 if not quiet:
                     status_console.print(
-                        f"[green]JSON output saved to:[/green] {output_file}"
+                        f"[green]JSON output saved to:[/green] {output_file}",
                     )
             else:
                 json_output = formatter.format_detailed()
@@ -579,7 +577,7 @@ def analyze(  # noqa: PLR0912, PLR0915, PLR0913
                 formatter.save_to_file(str(output_file), format_type="clustered")
                 if not quiet:
                     status_console.print(
-                        f"[green]DOT output saved to:[/green] {output_file}"
+                        f"[green]DOT output saved to:[/green] {output_file}",
                     )
             else:
                 dot_output = formatter.format_clustered()
