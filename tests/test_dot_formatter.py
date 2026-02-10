@@ -5,86 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from hugo_template_dependencies.graph.base import GraphBase
 from hugo_template_dependencies.output.dot_formatter import DOTFormatter
-
-
-class MockGraph(GraphBase):
-    """Mock graph for testing."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        # Add some test data
-        self.graph.add_node(
-            "template1",
-            type="template",
-            display_name="Template 1",
-            file_path="/path/to/template1.html",
-        )
-        self.graph.add_node(
-            "template2",
-            type="partial",
-            display_name="Partial 1",
-            file_path="/path/to/partial1.html",
-        )
-        self.graph.add_node(
-            "block1",
-            type="block",
-            display_name="Block 1",
-            block_name="content",
-        )
-
-        self.graph.add_edge(
-            "template1",
-            "template2",
-            relationship="includes",
-            line_number=5,
-            context='{{ partial "partial1.html" . }}',
-        )
-        self.graph.add_edge(
-            "template1",
-            "block1",
-            relationship="defines",
-            line_number=10,
-        )
-
-        self._nodes = {
-            "template1": {
-                "type": "template",
-                "display_name": "Template 1",
-                "file_path": "/path/to/template1.html",
-            },
-            "template2": {
-                "type": "partial",
-                "display_name": "Partial 1",
-                "file_path": "/path/to/partial1.html",
-            },
-            "block1": {
-                "type": "block",
-                "display_name": "Block 1",
-                "block_name": "content",
-            },
-        }
-
-    def add_node(self, node_id: str, node_type: str, **attributes: object) -> None:
-        """Add a node to mock graph."""
-        self.graph.add_node(node_id, type=node_type, **attributes)
-
-    def add_edge(
-        self,
-        source: str,
-        target: str,
-        relationship: str,
-        **attributes: object,
-    ) -> None:
-        """Add an edge to mock graph."""
-        self.graph.add_edge(source, target, relationship=relationship, **attributes)
-
-
-@pytest.fixture
-def mock_graph() -> MockGraph:
-    """Create a mock graph for testing."""
-    return MockGraph()
+from tests.conftest import MockGraph
 
 
 @pytest.fixture
