@@ -1,308 +1,397 @@
-# Hugo Template Dependencies Mock Patterns
+# Hugo Template Dependencies - Test Mock Structures
 
-This directory contains comprehensive test patterns for the Hugo template dependency analyzer. Each pattern demonstrates specific Hugo template constructs and dependency relationships.
+This directory contains pattern-based mock Hugo projects for testing the dependency analyzer. Each subdirectory represents a specific Hugo template pattern or construct.
 
-## Pattern Overview
+## 📋 Pattern Overview
 
-### Phase 1 & 2: Core Patterns
-- **`basic_partial_pattern/`** - Simple partial inclusion (1 level)
-- **`nested_partial_chain/`** - Multi-level partial hierarchy (3 levels)  
-- **`conditional_partials/`** - Dynamic partial selection with templates.Exists
-- **`context_passing/`** - Complex context passing with dict() and direct parameters
-
-### Phase 3: Advanced Patterns  
-- **`cached_partials/`** - Performance optimization with partialCached
-- **`template_blocks/`** - Template inheritance with baseof.html and blocks
-- **`inline_partials/`** - Inline partial definitions within templates
-- **`function_integration/`** - Hugo functions (print, printf, dict, slice, etc.)
-- **`shortcode_templates/`** - Shortcode templates calling partials
-
-### Phase 4: Real-World Validation
-- **`real_world_complex/`** - Production-realistic theme complexity (coming soon)
+| Pattern                                           | Purpose                  | Nodes | Edges | Key Features                     |
+| ------------------------------------------------- | ------------------------ | ----- | ----- | -------------------------------- |
+| [`basic_partial_pattern`](#basic_partial_pattern) | Simple partial inclusion | 2     | 1     | Basic `{{ partial }}` call       |
+| [`nested_partial_chain`](#nested_partial_chain)   | Multi-level hierarchy    | 5     | 4     | 3-level nested partials          |
+| [`conditional_partials`](#conditional_partials)   | Dynamic selection        | 4     | 0     | `templates.Exists` checks        |
+| [`context_passing`](#context_passing)             | Data passing             | 3     | 2     | `dict()` context examples        |
+| [`cached_partials`](#cached_partials)             | Caching patterns         | 3     | 2     | `partialCached` function         |
+| [`template_blocks`](#template_blocks)             | Block inheritance        | 2     | 0     | `{{ block }}` and `{{ define }}` |
+| [`inline_partials`](#inline_partials)             | Inline definitions       | 1     | 0     | `{{ define "_partials/..." }}`   |
+| [`function_integration`](#function_integration)   | Hugo functions           | 3     | 2     | `printf`, `dict`, `slice`, `add` |
+| [`shortcode_templates`](#shortcode_templates)     | Shortcode patterns       | 4     | 2     | `layouts/shortcodes/` directory  |
+| [`real_world_complex`](#real_world_complex)       | Realistic structure      | 12    | 11    | Multi-level article hierarchy    |
 
 ---
 
-## Pattern Details
+## 🎯 Pattern Details
 
-### basic_partial_pattern (2 nodes, 1 edge)
-**Purpose:** Test simple partial inclusion and basic dependency tracking
+### basic_partial_pattern
 
+**Purpose:** Test basic partial inclusion pattern  
 **Structure:**
 ```
-layouts/single.html → calls partial "header.html"
-layouts/_partials/header.html (no dependencies)
+layouts/
+├── single.html              # Template calling header partial
+└── _partials/
+    └── header.html          # Simple header partial
 ```
 
-**Dependencies:**
-- `single.html` → `header.html`
+**Key Construct:**
+```go
+{{ partial "header.html" . }}
+```
 
-**Usage:** Basic template calling a simple header partial
+**Expected Analysis:**
+- 2 nodes: single.html → header.html
+- 1 edge: includes relationship
+- Tests basic partial resolution
 
 ---
 
-### nested_partial_chain (5 nodes, 4 edges)  
-**Purpose:** Test multi-level partial dependencies and context passing
+### nested_partial_chain
 
+**Purpose:** Test multi-level partial hierarchy  
 **Structure:**
 ```
-layouts/index.html → calls partial "layout/main.html"
-layouts/_partials/layout/main.html → calls "components/sidebar.html" + "components/content.html"
-layouts/_partials/components/sidebar.html → calls "components/widgets/navigation.html" 
-layouts/_partials/components/content.html (leaf)
-layouts/_partials/components/widgets/navigation.html (leaf)
+layouts/
+├── index.html               # Entry point
+└── _partials/
+    ├── layout/
+    │   └── main.html        # Layout wrapper
+    └── components/
+        ├── sidebar.html     # Sidebar component
+        ├── content.html     # Content area (leaf)
+        └── widgets/
+            └── navigation.html  # Navigation widget (leaf)
 ```
 
-**Dependencies:**
-- `index.html` → `layout/main.html`
-- `layout/main.html` → `components/sidebar.html`
-- `layout/main.html` → `components/content.html` 
-- `components/sidebar.html` → `components/widgets/navigation.html`
+**Key Pattern:**
+```
+index.html → layout/main.html → components/sidebar.html → widgets/navigation.html
+                              → components/content.html
+```
 
-**Usage:** Complex nested layout with 3-level partial hierarchy
+**Expected Analysis:**
+- 5 nodes: 3-level hierarchy
+- 4 edges: nested includes
+- Tests deep partial chains
 
 ---
 
-### conditional_partials (4 nodes, 1 edge)
-**Purpose:** Test dynamic partial selection and existence checking
+### conditional_partials
 
+**Purpose:** Test dynamic partial selection with fallbacks  
 **Structure:**
 ```
-layouts/list.html → conditional selection of partials
-layouts/_partials/card-layout.html
-layouts/_partials/list-layout.html  
-layouts/_partials/default-layout.html (fallback)
+layouts/
+├── list.html                # Template with conditional logic
+└── _partials/
+    ├── card-layout.html     # Conditional option 1
+    ├── list-layout.html     # Conditional option 2
+    └── default-layout.html  # Fallback option
 ```
 
-**Dependencies:**
-- `list.html` → `default-layout.html` (fallback detected)
+**Key Construct:**
+```go
+{{ if templates.Exists "partials/card-layout.html" }}
+  {{ partial "card-layout.html" . }}
+{{ else if templates.Exists "partials/list-layout.html" }}
+  {{ partial "list-layout.html" . }}
+{{ else }}
+  {{ partial "default-layout.html" . }}
+{{ end }}
+```
 
-**Logic:** Uses `templates.Exists` to conditionally select layout partials
-
-**Usage:** Dynamic layout selection based on parameters with fallback
+**Expected Analysis:**
+- 4 nodes: 1 template + 3 partials
+- 0 edges: conditional calls may not create static edges
+- Tests `templates.Exists` pattern
 
 ---
 
-### context_passing (3 nodes, 2 edges)
-**Purpose:** Test various context and dictionary passing methods
+### context_passing
 
+**Purpose:** Test complex context and data passing  
 **Structure:**
 ```
-layouts/single.html → calls partials with dict() and direct context
-layouts/_partials/meta/article-info.html (uses .context and .scope)
-layouts/_partials/meta/author-info.html (uses direct parameter data)
+layouts/
+├── single.html              # Template passing context
+└── _partials/
+    └── meta/
+        ├── article-info.html    # Uses .context and .scope
+        └── author-info.html     # Uses .Author directly
 ```
 
-**Dependencies:**
-- `single.html` → `meta/article-info.html`
-- `single.html` → `meta/author-info.html`
+**Key Constructs:**
+```go
+{{ partial "meta/article-info.html" (dict "context" . "scope" "single") }}
+{{ partial "meta/author-info.html" .Author }}
+```
 
-**Context Patterns:**
-- `dict("context" . "scope" "single" "showDate" true)` 
-- Direct parameter passing with `.Params.author`
-
-**Usage:** Complex data passing to partials with structured contexts
+**Expected Analysis:**
+- 3 nodes: single.html → 2 meta partials
+- 2 edges: includes with context
+- Tests `dict()` and direct data passing
 
 ---
 
-### cached_partials (3 nodes, 0 edges)
-**Purpose:** Test partialCached function and caching behavior
+### cached_partials
 
+**Purpose:** Test `partialCached` function calls  
 **Structure:**
 ```
-layouts/baseof.html → calls partialCached "head-meta.html" and "analytics.html"
-layouts/_partials/head-meta.html (cached per page)
-layouts/_partials/analytics.html (cached per site)
+layouts/
+├── baseof.html              # Base template with caching
+└── _partials/
+    ├── head-meta.html       # Cached per page
+    └── analytics.html       # Cached per site
 ```
 
-**Dependencies:**
-- No traditional edges (partialCached is performance optimization, not dependency)
+**Key Construct:**
+```go
+{{ partialCached "head-meta.html" . }}
+{{ partialCached "analytics.html" .Site }}
+```
 
-**Caching:**
-- `head-meta.html` cached per page context
-- `analytics.html` cached per site context
-
-**Usage:** Performance-optimized partial inclusion with caching
+**Expected Analysis:**
+- 3 nodes: baseof + 2 cached partials
+- 2 edges: cached includes
+- Tests `partialCached` detection
 
 ---
 
-### template_blocks (2 nodes, 0 edges)
-**Purpose:** Test block definitions and template inheritance
+### template_blocks
 
+**Purpose:** Test block inheritance pattern  
 **Structure:**
 ```
-layouts/_default/baseof.html → defines blocks (main, sidebar, title, head, footer)
-layouts/_default/single.html → overrides blocks with {{ define "blockname" }}
+layouts/_default/
+├── baseof.html              # Base template with blocks
+└── single.html              # Template defining blocks
 ```
 
-**Dependencies:**
-- No traditional edges (inheritance relationship, not partial calls)
+**Key Constructs:**
+```go
+# baseof.html
+{{ block "main" . }}{{ end }}
+{{ block "sidebar" . }}{{ end }}
 
-**Blocks:**
-- `title`, `head`, `main`, `sidebar`, `footer` blocks defined in baseof
-- `single.html` overrides `title`, `head`, `main`, `sidebar` blocks
+# single.html
+{{ define "main" }}...{{ end }}
+{{ define "sidebar" }}...{{ end }}
+```
 
-**Usage:** Hugo template inheritance with block definitions and overrides
+**Expected Analysis:**
+- 2 nodes: baseof.html and single.html
+- 0 edges: block inheritance is not a traditional include
+- Tests `{{ block }}` and `{{ define }}` detection
 
 ---
 
-### inline_partials (1+ nodes, varies)
-**Purpose:** Test inline partial definitions within templates
+### inline_partials
 
+**Purpose:** Test inline partial definitions  
 **Structure:**
 ```
-layouts/home.html → defines and calls inline partials
-  {{ define "_partials/inline-helper.html" }}
-  {{ define "_partials/icon-renderer.html" }}
+layouts/
+└── home.html                # Template with inline partials
 ```
 
-**Dependencies:**
-- Analyzer limitation: inline partials not detected as separate nodes
-- Documents potential enhancement area
+**Key Construct:**
+```go
+{{ define "_partials/inline-helper.html" }}
+  <div>Inline helper content</div>
+{{ end }}
 
-**Inline Definitions:**
-- `inline-helper.html` for dynamic messages with timestamps
-- `icon-renderer.html` for emoji-based icons
+{{ partial "inline-helper.html" (dict "message" "test") }}
+```
 
-**Usage:** Template-specific helper partials defined inline
+**Expected Analysis:**
+- 1 node: home.html
+- 0 edges: inline partials are defined in same file
+- Tests `{{ define "_partials/..." }}` syntax
+- **Note:** Analyzer treats inline partials as unresolved (expected behavior)
 
 ---
 
-### function_integration (3 nodes, 3 edges)
-**Purpose:** Test partials using Hugo functions and complex logic
+### function_integration
 
+**Purpose:** Test Hugo function usage in templates  
 **Structure:**
 ```
-layouts/taxonomy.html → calls partials with complex data structures
-layouts/_partials/term-links.html → processes slices and dicts
-layouts/_partials/badge.html → uses dict lookups and conditionals
+layouts/
+├── taxonomy.html            # Template using multiple functions
+└── _partials/
+    ├── term-links.html      # Partial receiving processed data
+    └── badge.html           # Partial for UI components
 ```
 
-**Dependencies:**
-- `taxonomy.html` → `term-links.html`
-- `taxonomy.html` → `badge.html`
-- `term-links.html` → `badge.html`
+**Key Functions:**
+```go
+{{ printf "%s: %s" .Data.Singular .Title }}
+{{ $terms := slice }}
+{{ $terms = $terms | append (dict "Name" $key "Count" $value.Count) }}
+{{ $totalPosts = add $totalPosts .Count }}
+```
 
-**Hugo Functions:**
-- `print`, `printf`, `dict`, `slice`, `append`, `len`, `add`, `cond`, `index`
-- Complex data manipulation and conditional logic
-
-**Usage:** Advanced Hugo template programming with function integration
+**Expected Analysis:**
+- 3 nodes: taxonomy.html → 2 partials
+- 2 edges: includes with function-processed data
+- Tests `printf`, `dict`, `slice`, `append`, `add` functions
 
 ---
 
-### shortcode_templates (4 nodes, 2 edges)
-**Purpose:** Test shortcode template patterns
+### shortcode_templates
 
+**Purpose:** Test shortcode patterns  
 **Structure:**
 ```
-layouts/shortcodes/figure.html → calls partial "image-processor.html"
-layouts/shortcodes/alert.html → calls partial "icon.html"  
-layouts/_partials/image-processor.html (image processing logic)
-layouts/_partials/icon.html (icon rendering)
+layouts/
+├── shortcodes/
+│   ├── alert.html           # Alert shortcode
+│   └── figure.html          # Figure shortcode
+└── _partials/
+    ├── icon.html            # Icon partial
+    └── image-processor.html # Image processing partial
 ```
 
-**Dependencies:**
-- `shortcodes/figure.html` → `image-processor.html`
-- `shortcodes/alert.html` → `icon.html`
+**Key Pattern:**
+```go
+# In shortcode
+{{ partial "icon.html" $type }}
+{{ partial "image-processor.html" . }}
+```
 
-**Shortcode Features:**
-- Parameter processing with `.Get`
-- Inner content with `.Inner`
-- Conditional logic and defaults
-
-**Usage:** Shortcode templates that delegate to reusable partials
+**Expected Analysis:**
+- 4 nodes: 2 shortcodes + 2 partials
+- 2 edges: shortcode → partial dependencies
+- Tests `layouts/shortcodes/` directory pattern
 
 ---
 
-## Testing Guidelines
+### real_world_complex
 
-### Running Individual Pattern Analysis
+**Purpose:** Realistic Hugo site structure based on Blowfish theme  
+**Structure:**
+```
+layouts/
+├── _default/
+│   └── single.html          # Article template
+└── _partials/
+    ├── article/
+    │   ├── header.html      # Article header
+    │   ├── content.html     # Article content
+    │   └── footer.html      # Article footer
+    ├── meta/
+    │   ├── main.html        # Meta aggregator
+    │   ├── author.html      # Author info
+    │   ├── published.html   # Publication date
+    │   └── tags.html        # Tag list
+    ├── analytics/
+    │   ├── tracker.html     # Analytics tracker
+    │   └── events.html      # Event tracking
+    └── shared/
+        ├── button.html      # Reusable button
+        └── icon.html        # Reusable icon
+```
+
+**Dependency Graph:**
+```
+single.html
+├── article/header.html
+│   └── meta/main.html
+│       ├── meta/author.html
+│       ├── meta/published.html
+│       └── meta/tags.html
+├── article/content.html
+├── article/footer.html
+│   ├── shared/button.html
+│   └── shared/icon.html
+└── analytics/tracker.html
+    └── analytics/events.html
+```
+
+**Expected Analysis:**
+- 12 nodes: realistic multi-level hierarchy
+- 11 edges: complex dependency graph
+- Tests real-world Hugo site patterns
+
+---
+
+## 🧪 Testing Guidelines
+
+### Running Analysis on Individual Patterns
+
 ```bash
-uv run python -m hugo_template_dependencies.cli analyze tests/mocks/PATTERN_NAME --format json
+# Analyze a specific pattern
+uv run hugo-template-dependencies analyze tests/mocks/basic_partial_pattern --format json
+
+# With different output formats
+uv run hugo-template-dependencies analyze tests/mocks/nested_partial_chain --format mermaid
+uv run hugo-template-dependencies analyze tests/mocks/real_world_complex --format dot
 ```
 
-### Expected Performance
-All patterns should complete analysis in < 1 second (target: < 5 seconds for full suite)
+### Running Integration Tests
 
-### Validation Commands
 ```bash
-# Test all patterns
-make test
-
-# Test specific integration
+# Test all Phase 2 patterns (basic, nested, conditional, context)
 uv run python -m pytest tests/integration/test_complete_pipeline.py::TestIntegrationPipeline::test_new_pattern_mock_structures -v
+
+# Test all Phase 3 patterns (cached, blocks, inline, functions, shortcodes)
 uv run python -m pytest tests/integration/test_complete_pipeline.py::TestIntegrationPipeline::test_phase3_advanced_patterns -v
+
+# Run all integration tests
+uv run python -m pytest tests/integration/test_complete_pipeline.py -v
 ```
 
----
+### Expected Node Counts
 
-## Pattern Statistics
-
-| Pattern | Nodes | Edges | Complexity Level | Primary Feature |
-|---------|--------|--------|------------------|-----------------|
-| basic_partial_pattern | 2 | 1 | Beginner | Simple partial call |
-| nested_partial_chain | 5 | 4 | Intermediate | Multi-level nesting |
-| conditional_partials | 4 | 1 | Intermediate | Dynamic selection |
-| context_passing | 3 | 2 | Intermediate | Complex data passing |
-| cached_partials | 3 | 0 | Advanced | Performance optimization |
-| template_blocks | 2 | 0 | Advanced | Template inheritance |
-| inline_partials | 1+ | varies | Advanced | Inline definitions |
-| function_integration | 3 | 3 | Advanced | Hugo functions |
-| shortcode_templates | 4 | 2 | Advanced | Shortcode patterns |
-
-**Total Coverage:** 26+ nodes, 13+ edges across all Hugo template constructs
+| Pattern               | Expected Nodes | Notes                                         |
+| --------------------- | -------------- | --------------------------------------------- |
+| basic_partial_pattern | 2              | single.html + header.html                     |
+| nested_partial_chain  | 5              | index + main + sidebar + content + navigation |
+| conditional_partials  | 4              | list + 3 conditional partials                 |
+| context_passing       | 3              | single + 2 meta partials                      |
+| cached_partials       | 3              | baseof + 2 cached partials                    |
+| template_blocks       | 2              | baseof + single                               |
+| inline_partials       | 1-3            | home.html + possibly unresolved inline refs   |
+| function_integration  | 3              | taxonomy + 2 partials                         |
+| shortcode_templates   | 4              | 2 shortcodes + 2 partials                     |
+| real_world_complex    | 12             | Full article hierarchy                        |
 
 ---
 
-## Pattern Evolution
+## 🔍 Pattern Selection Guide
 
-### Naming Convention Change
-These patterns replace the legacy calendar-themed structure:
+**Use this pattern when testing:**
 
-**Old (Calendar-themed):**
-- `nested_partials_project/recurrence_human_readable.html`
-- `recurrence/daily_frequency.html`
-- `recurrence/weekly_frequency.html`
-
-**New (Pattern-based):**
-- `nested_partial_chain/layout/main.html`
-- `components/sidebar.html`  
-- `components/widgets/navigation.html`
-
-### Advantages of Pattern-based Naming
-1. **Clear Intent** - File names indicate template construct being tested
-2. **Educational** - Serves as Hugo template pattern documentation  
-3. **Maintainable** - Easy to add new patterns or modify existing ones
-4. **Comprehensive** - Covers all major Hugo template features
+- **Basic partial resolution** → `basic_partial_pattern`
+- **Deep nesting** → `nested_partial_chain`
+- **Conditional logic** → `conditional_partials`
+- **Context passing** → `context_passing`
+- **Caching behavior** → `cached_partials`
+- **Block inheritance** → `template_blocks`
+- **Inline definitions** → `inline_partials`
+- **Hugo functions** → `function_integration`
+- **Shortcodes** → `shortcode_templates`
+- **Real-world scenarios** → `real_world_complex`
 
 ---
 
-## Contributing New Patterns
+## 📚 References
 
-### Pattern Requirements
-1. **Clear Purpose** - Document what specific Hugo construct is being tested
-2. **Realistic Structure** - Based on real-world theme patterns
-3. **Comprehensive Testing** - Include integration test validation
-4. **Performance** - Analysis should complete quickly (< 1 second target)
-
-### Pattern Template
-```
-tests/mocks/new_pattern/
-├── layouts/
-│   └── [template files]
-└── layouts/_partials/
-    └── [partial files]
-```
-
-### Documentation Update
-Add pattern details to this README with:
-- Purpose and structure
-- Dependencies and node/edge counts  
-- Usage examples
-- Integration test expectations
+- **Hugo Partial Documentation:** https://gohugo.io/templates/partials/
+- **Hugo Block Templates:** https://gohugo.io/templates/base/
+- **Hugo Shortcodes:** https://gohugo.io/templates/shortcode-templates/
+- **Blowfish Theme:** https://github.com/nunocoracao/blowfish (inspiration for real_world_complex)
 
 ---
 
-**Last Updated:** 2026-02-02  
-**Pattern Coverage:** All major Hugo template constructs  
-**Status:** Comprehensive test suite for Hugo template dependency analysis
+## 🗑️ Deprecated Patterns
+
+### nested_partials_project (REMOVED)
+
+**Status:** ⚠️ Deprecated - Replaced by pattern-based mocks  
+**Reason:** Calendar-themed naming was domain-specific and didn't clearly indicate Hugo constructs being tested  
+**Replacement:** Use `nested_partial_chain` for similar testing scenarios
+
+---
+
+**Last Updated:** 2026-02-10  
+**Maintainer:** Hugo Template Dependencies Project

@@ -95,6 +95,7 @@ class ProgressReporter:
     def __init__(
         self,
         console: Console | None = None,
+        *,
         show_progress: bool = True,
     ) -> None:
         """Initialize progress reporter.

@@ -8,9 +8,9 @@ Follows JSON Graph Format standard with nodes/edges structure.
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import jsonschema
 
@@ -27,7 +27,7 @@ class JSONFormatter:
     """
 
     # Hugo template JSON schema definition
-    HUGO_JSON_SCHEMA: dict[str, Any] = {
+    HUGO_JSON_SCHEMA: ClassVar[dict[str, Any]] = {
         "type": "object",
         "required": ["nodes", "edges", "metadata"],
         "properties": {
@@ -113,6 +113,7 @@ class JSONFormatter:
 
     def format_graph(
         self,
+        *,
         include_metadata: bool = True,
         include_statistics: bool = True,
         schema_version: str = "1.0",
@@ -130,15 +131,19 @@ class JSONFormatter:
         """
         graph_data: dict[str, Any] = {
             "schema_version": schema_version,
-            "generated_at": datetime.now().isoformat(),
+            "generated_at": datetime.now(timezone.utc).isoformat(),
             "graph_type": "hugo_template_dependencies",
         }
 
         # Add nodes
-        graph_data["nodes"] = self._get_formatted_nodes(include_metadata)
+        graph_data["nodes"] = self._get_formatted_nodes(
+            include_metadata=include_metadata
+        )
 
         # Add edges
-        graph_data["edges"] = self._get_formatted_edges(include_metadata)
+        graph_data["edges"] = self._get_formatted_edges(
+            include_metadata=include_metadata
+        )
 
         # Add statistics if requested
         if include_statistics:
@@ -195,7 +200,7 @@ class JSONFormatter:
             schema_version="1.0-detailed",
         )
 
-    def validate_json_schema(self, json_data: dict[str, Any]) -> dict[str, Any]:
+    def validate_json_schema(self, *, json_data: dict[str, Any]) -> dict[str, Any]:
         """Validate JSON data against the Hugo dependencies schema.
 
         Args:
@@ -221,11 +226,11 @@ class JSONFormatter:
                 errors.append(
                     f"Schema validation error at '{error_path}': {error.message}",
                 )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             errors.append(f"Schema validation failed: {e}")
 
         # Additional consistency checks
-        warnings.extend(self._consistency_checks(json_data))
+        warnings.extend(self._consistency_checks(json_data=json_data))
 
         return {
             "valid": len(errors) == 0,
@@ -233,7 +238,7 @@ class JSONFormatter:
             "warnings": warnings,
         }
 
-    def _consistency_checks(self, json_data: dict[str, Any]) -> list[str]:
+    def _consistency_checks(self, *, json_data: dict[str, Any]) -> list[str]:
         """Perform consistency checks on the JSON data.
 
         Args:
@@ -276,7 +281,7 @@ class JSONFormatter:
             "generator": "hugo-deps",
             "totalNodes": self.graph.get_node_count(),
             "totalEdges": self.graph.get_edge_count(),
-            "analysis_date": datetime.now().isoformat(),
+            "analysis_date": datetime.now(timezone.utc).isoformat(),
         }
 
         # Add any additional metadata from the graph
@@ -288,6 +293,7 @@ class JSONFormatter:
         self,
         file_path: Path,
         format_type: str = "detailed",
+        *,
         validate_output: bool = True,
     ) -> None:
         """Save JSON output to file.
@@ -315,18 +321,16 @@ class JSONFormatter:
                 )
             else:
                 msg = f"Invalid format_type: {format_type}. Use 'simple', 'detailed', or 'custom'"
-                raise ValueError(
-                    msg,
-                )
+                raise ValueError(msg)
         except Exception as e:
             msg = f"Failed to generate JSON output: {e}"
-            raise ValueError(msg)
+            raise ValueError(msg) from e
 
         # Validate output if requested
         if validate_output:
             try:
                 json_data = json.loads(json_output)
-                validation_result = self.validate_json_schema(json_data)
+                validation_result = self.validate_json_schema(json_data=json_data)
                 if not validation_result["valid"]:
                     error_msg = "JSON validation failed:\n"
                     for error in validation_result["errors"]:
@@ -338,7 +342,7 @@ class JSONFormatter:
                     raise ValueError(error_msg.rstrip())
             except json.JSONDecodeError as e:
                 msg = f"Generated JSON is invalid: {e}"
-                raise ValueError(msg)
+                raise ValueError(msg) from e
 
         # Write to file with error handling
         try:
@@ -347,9 +351,9 @@ class JSONFormatter:
                 f.write(json_output)
         except OSError as e:
             msg = f"Failed to write JSON to file {file_path}: {e}"
-            raise OSError(msg)
+            raise OSError(msg) from e
 
-    def _get_formatted_nodes(self, include_metadata: bool) -> list[dict[str, Any]]:
+    def _get_formatted_nodes(self, *, include_metadata: bool) -> list[dict[str, Any]]:
         """Get formatted node data for JSON output.
 
         Args:
@@ -407,7 +411,7 @@ class JSONFormatter:
 
         return nodes
 
-    def _get_formatted_edges(self, include_metadata: bool) -> list[dict[str, Any]]:
+    def _get_formatted_edges(self, *, include_metadata: bool) -> list[dict[str, Any]]:
         """Get formatted edge data for JSON output.
 
         Args:

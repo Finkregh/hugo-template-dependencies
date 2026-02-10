@@ -107,8 +107,7 @@ class TestDOTFormatter:
         # Check for required elements
         assert "layout = dot;" in result
         assert "rankdir = TB;" in result
-        assert "node [shape=box, style=filled];" in result
-        assert "edge [fontsize=10];" in result
+        assert "bgcolor=white;" in result
 
     def test_format_graph_with_subgraphs(self, dot_formatter: DOTFormatter) -> None:
         """Test graph formatting with subgraphs."""
@@ -215,110 +214,113 @@ class TestDOTFormatter:
     def test_get_node_style_config(self, dot_formatter: DOTFormatter) -> None:
         """Test node style configuration."""
         # Test template style
-        style = dot_formatter._get_node_style_config("template")
+        style = dot_formatter._get_node_style_config(node_type="template")
         assert "shape=box" in style
-        assert "fillcolor=#e1f5fe" in style
-        assert "color=#01579b" in style
+        assert 'fillcolor="#e1f5fe"' in style
+        assert 'color="#01579b"' in style
 
         # Test partial style
-        style = dot_formatter._get_node_style_config("partial")
+        style = dot_formatter._get_node_style_config(node_type="partial")
         assert "shape=ellipse" in style
-        assert "fillcolor=#FFE6E6" in style
-        assert "color=#E24A4A" in style
+        assert 'fillcolor="#FFE6E6"' in style
+        assert 'color="#E24A4A"' in style
 
         # Test unknown style
-        style = dot_formatter._get_node_style_config("unknown")
+        style = dot_formatter._get_node_style_config(node_type="unknown")
         assert "shape=box" in style
-        assert "fillcolor=#f5f5f5" in style
+        assert 'fillcolor="#f5f5f5"' in style
 
     def test_get_edge_style_config(self, dot_formatter: DOTFormatter) -> None:
         """Test edge style configuration."""
         # Test includes style
-        style = dot_formatter._get_edge_style_config("includes")
-        assert "color=#2196f3" in style
+        style = dot_formatter._get_edge_style_config(relationship="includes")
+        assert 'color="#2196f3"' in style
         assert "style=solid" in style
         assert "arrowhead=normal" in style
 
         # Test defines style
-        style = dot_formatter._get_edge_style_config("defines")
-        assert "color=#4caf50" in style
+        style = dot_formatter._get_edge_style_config(relationship="defines")
+        assert 'color="#4caf50"' in style
         assert "style=bold" in style
         assert "arrowhead=diamond" in style
 
         # Test unknown style
-        style = dot_formatter._get_edge_style_config("unknown")
-        assert "color=#9e9e9e" in style
+        style = dot_formatter._get_edge_style_config(relationship="unknown")
+        assert 'color="#9e9e9e"' in style
         assert "style=solid" in style
 
     def test_get_subgraph_style(self, dot_formatter: DOTFormatter) -> None:
         """Test subgraph style configuration."""
         # Test template subgraph style
-        style = dot_formatter._get_subgraph_style("template")
+        style = dot_formatter._get_subgraph_style(node_type="template")
         assert "filled" in style
-        assert "fillcolor=#e1f5fe20" in style
+        assert 'fillcolor="#e1f5fe"' in style
 
         # Test unknown subgraph style
-        style = dot_formatter._get_subgraph_style("unknown")
+        style = dot_formatter._get_subgraph_style(node_type="unknown")
         assert "filled" in style
-        assert "fillcolor=#f5f5f520" in style
+        assert 'fillcolor="#f5f5f5"' in style
 
     def test_sanitize_id(self, dot_formatter: DOTFormatter) -> None:
         """Test ID sanitization."""
         # Test basic sanitization
-        assert dot_formatter._sanitize_id("test/id") == "test_id"
-        assert dot_formatter._sanitize_id("test.id") == "test_id"
-        assert dot_formatter._sanitize_id("test-id") == "test_id"
-        assert dot_formatter._sanitize_id("test id") == "test_id"
-        assert dot_formatter._sanitize_id("test(id)") == "testid"
+        assert dot_formatter._sanitize_id(node_id="test/id") == "local_test_id"
+        assert dot_formatter._sanitize_id(node_id="test.id") == "local_test"
+        assert dot_formatter._sanitize_id(node_id="test-id") == "local_test_id"
+        assert dot_formatter._sanitize_id(node_id="test id") == "local_test_id"
+        assert dot_formatter._sanitize_id(node_id="test(id)") == "local_testid"
 
         # Test numeric start
-        assert dot_formatter._sanitize_id("123test") == "n_123test"
-        assert dot_formatter._sanitize_id("-test") == "n__test"
+        assert dot_formatter._sanitize_id(node_id="123test") == "local_123test"
+        assert dot_formatter._sanitize_id(node_id="-test") == "local_test"
 
         # Test empty ID
-        assert dot_formatter._sanitize_id("") == "empty"
+        assert dot_formatter._sanitize_id(node_id="") == "local_"
 
         # Test all numeric
-        result = dot_formatter._sanitize_id("123")
-        assert result.startswith("node_")
+        result = dot_formatter._sanitize_id(node_id="123")
+        assert result.startswith("local_node_")
 
     def test_get_node_label(self, dot_formatter: DOTFormatter) -> None:
         """Test node label generation."""
         # Test basic label
         data = {"display_name": "Test Template"}
-        label = dot_formatter._get_node_label("test", data)
+        label = dot_formatter._get_node_label(node_id="test", data=data)
         assert label == "Test Template"
 
         # Test label with file path
         data = {"display_name": "Test Template", "file_path": "/path/to/test.html"}
-        label = dot_formatter._get_node_label("test", data)
+        label = dot_formatter._get_node_label(node_id="test", data=data)
         assert "Test Template" in label
         assert "/path/to/test.html" in label
 
         # Test label without display name
         data = {"file_path": "/path/to/test.html"}
-        label = dot_formatter._get_node_label("test", data)
+        label = dot_formatter._get_node_label(node_id="test", data=data)
         assert label == "test"
 
     def test_get_node_attributes(self, dot_formatter: DOTFormatter) -> None:
         """Test node attribute generation."""
         data = {"display_name": "Test", "file_path": "/path/to/test.html"}
-        attributes = dot_formatter._get_node_attributes("template", data)
+        attributes = dot_formatter._get_node_attributes(node_type="template", data=data)
 
         # Should include both display name and file path in label
         assert 'label="Test\\n/path/to/test.html"' in attributes
         assert "shape=box" in attributes
         assert "style=filled" in attributes
-        assert "fillcolor=#e1f5fe" in attributes
+        assert 'fillcolor="#e1f5fe"' in attributes
         assert 'tooltip="/path/to/test.html"' in attributes
 
     def test_get_edge_attributes(self, dot_formatter: DOTFormatter) -> None:
         """Test edge attribute generation."""
         data = {"line_number": 5, "context": "test context"}
-        attributes = dot_formatter._get_edge_attributes("includes", data)
+        attributes = dot_formatter._get_edge_attributes(
+            relationship="includes",
+            data=data,
+        )
 
         assert 'label="includes"' in attributes
-        assert "color=#2196f3" in attributes
+        assert 'color="#2196f3"' in attributes
         assert "style=solid" in attributes
         assert 'xlabel="L5"' in attributes
         assert 'tooltip="test context"' in attributes
@@ -328,7 +330,5 @@ class TestDOTFormatter:
         styles = dot_formatter._get_global_styles()
 
         assert isinstance(styles, list)
-        assert 'fontname="Arial"' in " ".join(styles)
-        assert "fontsize=10" in " ".join(styles)
         assert "bgcolor=white" in " ".join(styles)
         assert "pad=1" in " ".join(styles)

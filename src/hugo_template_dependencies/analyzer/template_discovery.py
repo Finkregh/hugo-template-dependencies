@@ -8,8 +8,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from hugo_template_dependencies.graph.hugo_graph import HugoTemplate, TemplateType
 from hugo_template_dependencies.analyzer.template_parser import HugoTemplateParser
+from hugo_template_dependencies.graph.hugo_graph import HugoTemplate
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -64,7 +64,7 @@ class TemplateDiscovery:
                 template = HugoTemplate(
                     file_path=template_file,
                     template_type=HugoTemplateParser._determine_template_type(
-                        template_file
+                        template_file,
                     ),
                 )
                 templates.append(template)

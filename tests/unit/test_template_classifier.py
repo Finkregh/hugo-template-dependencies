@@ -78,6 +78,8 @@ class TestTemplateClassification:
         assert main_result == TemplateType.TEMPLATE
 
         # Test partial template
-        partial_path = Path("tests/mocks/basic_partial_pattern/layouts/_partials/header.html")
+        partial_path = Path(
+            "tests/mocks/basic_partial_pattern/layouts/_partials/header.html",
+        )
         partial_result = HugoTemplateParser._determine_template_type(partial_path)
         assert partial_result == TemplateType.PARTIAL

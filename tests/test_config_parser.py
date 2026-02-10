@@ -18,9 +18,9 @@ class TestHugoConfigParserModuleResolution:
         with tempfile.TemporaryDirectory() as temp_dir:
             cache_dir = Path(temp_dir)
 
-            # Create a direct match: module@version (using _ instead of / as in real cache)
-            module_dir = cache_dir / "golang.foundata.com_hugo-theme-dev@v1.0.0"
-            module_dir.mkdir()
+            # Create a direct match: module@version (Hugo uses slashes in directory names)
+            module_dir = cache_dir / "golang.foundata.com" / "hugo-theme-dev@v1.0.0"
+            module_dir.mkdir(parents=True)
 
             # Test direct match
             result = self.parser._scan_cache_for_module(
@@ -36,9 +36,11 @@ class TestHugoConfigParserModuleResolution:
         with tempfile.TemporaryDirectory() as temp_dir:
             cache_dir = Path(temp_dir)
 
-            # Create multiple versions
-            v1_dir = cache_dir / "example.com_theme@v1.0.0"
-            v2_dir = cache_dir / "example.com_theme@v2.0.0"
+            # Create multiple versions (hierarchical format with slashes)
+            domain_dir = cache_dir / "example.com"
+            domain_dir.mkdir()
+            v1_dir = domain_dir / "theme@v1.0.0"
+            v2_dir = domain_dir / "theme@v2.0.0"
             v1_dir.mkdir()
             v2_dir.mkdir()
 
@@ -69,16 +71,19 @@ class TestHugoConfigParserModuleResolution:
         with tempfile.TemporaryDirectory() as temp_dir:
             cache_dir = Path(temp_dir)
 
-            # Create multiple versions in different formats
+            # Create multiple versions (hierarchical format with slashes)
+            domain_dir = cache_dir / "example.com"
+            domain_dir.mkdir()
+
             versions = [
-                "example.com_theme@v1.0.0",
-                "example.com_theme@v1.1.0",
-                "example.com_theme@v2.0.0-beta",
-                "example.com_theme@v2.0.0",
+                "theme@v1.0.0",
+                "theme@v1.1.0",
+                "theme@v2.0.0-beta",
+                "theme@v2.0.0",
             ]
 
             for version in versions:
-                (cache_dir / version).mkdir()
+                (domain_dir / version).mkdir()
 
             # Test exact version match
             result = self.parser._scan_cache_for_module(

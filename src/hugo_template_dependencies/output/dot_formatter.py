@@ -6,6 +6,8 @@ into DOT format for Graphviz visualization and rendering.
 
 from __future__ import annotations
 
+import os
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -30,6 +32,7 @@ class DOTFormatter:
 
     def format_graph(
         self,
+        *,
         graph_type: str = "digraph",
         layout: str = "dot",
         rankdir: str = "TB",
@@ -66,18 +69,18 @@ class DOTFormatter:
 
         # Add subgraphs by type if requested
         if include_subgraphs:
-            subgraphs = self._get_subgraphs(include_styles)
+            subgraphs = self._get_subgraphs(include_styles=include_styles)
             for subgraph in subgraphs:
                 dot_lines.extend(subgraph)
                 dot_lines.append("")
         else:
             # Add nodes directly
-            nodes = self._get_formatted_nodes(include_styles)
+            nodes = self._get_formatted_nodes(include_styles=include_styles)
             dot_lines.extend(nodes)
             dot_lines.append("")
 
         # Add edges
-        edges = self._get_formatted_edges(include_styles)
+        edges = self._get_formatted_edges(include_styles=include_styles)
         dot_lines.extend(edges)
         dot_lines.append("")
 
@@ -143,7 +146,7 @@ class DOTFormatter:
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(dot_output)
 
-    def _get_formatted_nodes(self, include_styles: bool) -> list[str]:
+    def _get_formatted_nodes(self, *, include_styles: bool) -> list[str]:
         """Get formatted node definitions.
 
         Args:
@@ -156,21 +159,21 @@ class DOTFormatter:
         nodes = []
 
         for node_id, data in self.graph.graph.nodes(data=True):
-            label = self._get_node_label(node_id, data)
+            label = self._get_node_label(node_id=node_id, data=data)
             node_type = data.get("type", "unknown")
 
             if include_styles:
-                attributes = self._get_node_attributes(node_type, data)
+                attributes = self._get_node_attributes(node_type=node_type, data=data)
                 attributes_str = f" [{attributes}]" if attributes else ""
             else:
                 attributes_str = f' [label="{label}"]'
 
-            sanitized_id = self._sanitize_id(node_id)
+            sanitized_id = self._sanitize_id(node_id=node_id)
             nodes.append(f"    {sanitized_id}{attributes_str};")
 
         return nodes
 
-    def _get_formatted_edges(self, include_styles: bool) -> list[str]:
+    def _get_formatted_edges(self, *, include_styles: bool) -> list[str]:
         """Get formatted edge definitions.
 
         Args:
@@ -189,11 +192,11 @@ class DOTFormatter:
             source_data = self.graph.graph.nodes.get(source, {})
             target_data = self.graph.graph.nodes.get(target, {})
 
-            source_id = self._sanitize_id(source, source_data)
-            target_id = self._sanitize_id(target, target_data)
+            source_id = self._sanitize_id(node_id=source, node_data=source_data)
+            target_id = self._sanitize_id(node_id=target, node_data=target_data)
 
             if include_styles:
-                attributes = self._get_edge_attributes(relationship, data)
+                attributes = self._get_edge_attributes(relationship=relationship, data=data)
                 attributes_str = f" [{attributes}]" if attributes else ""
             else:
                 attributes_str = f' [label="{relationship}"]'
@@ -202,7 +205,7 @@ class DOTFormatter:
 
         return edges
 
-    def _get_subgraphs(self, include_styles: bool = True) -> list[list[str]]:
+    def _get_subgraphs(self, *, include_styles: bool = True) -> list[list[str]]:
         """Get formatted subgraph definitions by template directory and type.
 
         Args:
@@ -261,7 +264,7 @@ class DOTFormatter:
 
                 if include_styles:
                     # Use appropriate style based on group type
-                    subgraph_style = self._get_cluster_style_for_group(group_key)
+                    subgraph_style = self._get_cluster_style_for_group(group_key=group_key)
                     subgraph_lines.append("        style = filled;")
                     fillcolor = subgraph_style.split('fillcolor="')[1].split('"')[0]
                     subgraph_lines.append(f'        fillcolor = "{fillcolor}";')
@@ -269,10 +272,10 @@ class DOTFormatter:
                 # Add nodes to subgraph
                 for node_id, data in group_data["nodes"]:
                     node_type = data.get("type", "unknown")
-                    label = self._get_node_label(node_id, data)
-                    sanitized_id = self._sanitize_id(node_id, data)
+                    label = self._get_node_label(node_id=node_id, data=data)
+                    sanitized_id = self._sanitize_id(node_id=node_id, node_data=data)
                     if include_styles:
-                        attributes = self._get_node_attributes(node_type, data)
+                        attributes = self._get_node_attributes(node_type=node_type, data=data)
                         attributes_str = f" [{attributes}]" if attributes else ""
                     else:
                         attributes_str = f' [label="{label}"]'
@@ -283,7 +286,7 @@ class DOTFormatter:
 
         return subgraphs
 
-    def _get_node_label(self, node_id: str, data: dict[str, Any]) -> str:
+    def _get_node_label(self, *, node_id: str, data: dict[str, Any]) -> str:
         """Get label for a node.
 
         Args:
@@ -318,7 +321,7 @@ class DOTFormatter:
 
         return "\\n".join(label_parts)
 
-    def _get_node_attributes(self, node_type: str, data: dict[str, Any]) -> str:
+    def _get_node_attributes(self, *, node_type: str, data: dict[str, Any]) -> str:
         """Get DOT attributes for a node based on its type.
 
         Args:
@@ -330,13 +333,13 @@ class DOTFormatter:
 
         """
         node_id = data.get("id", "")
-        label = self._get_node_label(node_id, data)
+        label = self._get_node_label(node_id=node_id, data=data)
 
         # Base attributes
         attributes = [f'label="{label}"']
 
         # Type-specific styling
-        style_config = self._get_node_style_config(node_type)
+        style_config = self._get_node_style_config(node_type=node_type)
         attributes.extend(style_config)
 
         # Add font attributes for all nodes
@@ -348,7 +351,7 @@ class DOTFormatter:
 
         return ", ".join(attributes)
 
-    def _get_edge_attributes(self, relationship: str, data: dict[str, Any]) -> str:
+    def _get_edge_attributes(self, *, relationship: str, data: dict[str, Any]) -> str:
         """Get DOT attributes for an edge based on relationship type.
 
         Args:
@@ -362,7 +365,7 @@ class DOTFormatter:
         attributes = [f'label="{relationship}"']
 
         # Relationship-specific styling
-        style_config = self._get_edge_style_config(relationship)
+        style_config = self._get_edge_style_config(relationship=relationship)
         attributes.extend(style_config)
 
         # Add font attributes for all edges
@@ -373,7 +376,7 @@ class DOTFormatter:
             attributes.append(f'xlabel="L{data["line_number"]}"')
 
         # Add tooltip if context is available
-        if "context" in data and data["context"]:
+        if data.get("context"):
             context = (
                 data["context"][:50] + "..."
                 if len(data["context"]) > 50
@@ -383,7 +386,7 @@ class DOTFormatter:
 
         return ", ".join(attributes)
 
-    def _get_node_style_config(self, node_type: str) -> list[str]:
+    def _get_node_style_config(self, *, node_type: str) -> list[str]:
         """Get style configuration for a node type.
 
         Args:
@@ -470,7 +473,7 @@ class DOTFormatter:
         }
         return styles.get(node_type, styles["template"])
 
-    def _get_edge_style_config(self, relationship: str) -> list[str]:
+    def _get_edge_style_config(self, *, relationship: str) -> list[str]:
         """Get style configuration for an edge relationship.
 
         Args:
@@ -491,7 +494,7 @@ class DOTFormatter:
         }
         return styles.get(relationship, styles["unknown"])
 
-    def _get_subgraph_style(self, node_type: str) -> str:
+    def _get_subgraph_style(self, *, node_type: str) -> str:
         """Get style for subgraph based on node type.
 
         Args:
@@ -523,7 +526,7 @@ class DOTFormatter:
         }
         return styles.get(node_type, styles["unknown"])
 
-    def _get_cluster_style_for_group(self, group_key: str) -> str:
+    def _get_cluster_style_for_group(self, *, group_key: str) -> str:
         """Get appropriate subgraph style for a group.
 
         Args:
@@ -559,7 +562,10 @@ class DOTFormatter:
         ]
 
     def _sanitize_id(
-        self, node_id: str, node_data: dict[str, Any] | None = None
+        self,
+        *,
+        node_id: str,
+        node_data: dict[str, Any] | None = None,
     ) -> str:
         """Sanitize node ID for DOT compatibility.
 
@@ -575,9 +581,6 @@ class DOTFormatter:
             Sanitized node ID with source prefix and meaningful path context
 
         """
-        import os
-        from pathlib import Path
-
         # Handle module node IDs that start with "module:"
         if node_id.startswith("module:"):
             module_path = node_id[7:]  # Remove "module:" prefix
@@ -616,12 +619,11 @@ class DOTFormatter:
                     except Exception:
                         # Fallback if method fails
                         module_name = source
+                # Fallback: extract from source path
+                elif "/" in source:
+                    module_name = source.split("/")[-1]
                 else:
-                    # Fallback: extract from source path
-                    if "/" in source:
-                        module_name = source.split("/")[-1]
-                    else:
-                        module_name = source
+                    module_name = source
 
                 # Sanitize module name
                 source_prefix = module_name.replace("-", "_").replace(".", "_")
@@ -644,12 +646,11 @@ class DOTFormatter:
                     meaningful_path = "/".join(relative_parts)
                 else:
                     meaningful_path = path_obj.name
+            # Fallback: use just the filename with parent directory for context
+            elif len(parts) >= 2:
+                meaningful_path = f"{parts[-2]}/{parts[-1]}"
             else:
-                # Fallback: use just the filename with parent directory for context
-                if len(parts) >= 2:
-                    meaningful_path = f"{parts[-2]}/{parts[-1]}"
-                else:
-                    meaningful_path = path_obj.name
+                meaningful_path = path_obj.name
 
         except (ValueError, IndexError):
             meaningful_path = node_id

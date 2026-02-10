@@ -12,12 +12,16 @@ from pathlib import Path
 import pytest
 
 from hugo_template_dependencies.config.parser import HugoConfigParser
+from hugo_template_dependencies.graph.hugo_graph import HugoModule
 from hugo_template_dependencies.modules.resolver import HugoModuleResolver
 
 
 @pytest.fixture
 def temp_project(tmp_path: Path) -> Path:
-    """Create temporary Hugo project structure."""
+    """Create temporary Hugo project structure.
+
+    Cleanup is automatic via tmp_path fixture.
+    """
     project = tmp_path / "project"
     project.mkdir()
 
@@ -31,7 +35,10 @@ def temp_project(tmp_path: Path) -> Path:
 
 @pytest.fixture
 def temp_cache(tmp_path: Path) -> Path:
-    """Create temporary Hugo cache directory structure."""
+    """Create temporary Hugo cache directory structure.
+
+    Cleanup is automatic via tmp_path fixture.
+    """
     cache = tmp_path / "cache" / "modules" / "filecache" / "modules" / "pkg" / "mod"
     cache.mkdir(parents=True)
     return cache
@@ -60,22 +67,26 @@ class TestModuleReplacements:
     """Test module replacement resolution."""
 
     def test_replacement_as_local_path(
-        self, temp_project: Path, temp_cache: Path,
+        self,
+        temp_project: Path,
+        temp_cache: Path,
     ) -> None:
         """Test replacement resolves to local relative path."""
-        # Setup: Create parent theme at ../../..
-        parent_theme = temp_project.parent.parent.parent / "theme"
+        # Setup: Create parent theme WITHIN tmp_path scope
+        # Use temp_project's tmp_path parent instead of going too far up
+        # Create theme as a sibling to project within the tmp_path
+        parent_theme = temp_project.parent / "theme"
         parent_theme.mkdir(parents=True, exist_ok=True)
         theme_layouts = parent_theme / "layouts"
-        theme_layouts.mkdir()
+        theme_layouts.mkdir(exist_ok=True)
         (theme_layouts / "baseof.html").write_text(
             '<html>{{ block "main" . }}{{ end }}</html>',
         )
 
-        # Config with replacement
+        # Config with replacement (adjusted to ../theme since we changed structure)
         config = {
             "module": {
-                "replacements": ["github.com/user/theme -> ../../.."],
+                "replacements": ["github.com/user/theme -> ../theme"],
                 "imports": [{"path": "github.com/user/theme", "version": "v1.0.0"}],
             },
         }
@@ -87,7 +98,7 @@ class TestModuleReplacements:
         # Extract replacements
         replacements = parser.extract_module_replacements(config)
         assert "github.com/user/theme" in replacements
-        assert replacements["github.com/user/theme"] == "../../.."
+        assert replacements["github.com/user/theme"] == "../theme"
 
         # Resolve module
         resolved = parser.resolve_module_path(
@@ -102,7 +113,9 @@ class TestModuleReplacements:
         assert (resolved / "layouts" / "baseof.html").exists()
 
     def test_replacement_fallback_to_cache(
-        self, temp_project: Path, temp_cache: Path,
+        self,
+        temp_project: Path,
+        temp_cache: Path,
     ) -> None:
         """Test replacement falls back to cachedir when local path doesn't exist."""
         # Setup: Create module in cache
@@ -187,7 +200,9 @@ class TestRemoteModuleResolution:
         assert resolved == module_dir
 
     def test_version_suffix_stripping(
-        self, temp_project: Path, temp_cache: Path,
+        self,
+        temp_project: Path,
+        temp_cache: Path,
     ) -> None:
         """Test version suffix like +vendor is handled."""
         # Hugo mod graph reports: github.com/foo/bar@v1.0.0+vendor
@@ -214,9 +229,10 @@ class TestRemoteModuleResolution:
 
     def test_find_latest_version(self, temp_project: Path, temp_cache: Path) -> None:
         """Test finding latest version when no version specified."""
-        # Create multiple versions
+        # Create multiple versions - use 3-level structure matching real Hugo cache
+        # Real structure: github.com/finkregh/hugo-theme-component-ical@v0.10.2
         for version in ["v1.0.0", "v1.1.0", "v2.0.0"]:
-            module_dir = temp_cache / f"github.com/foo/bar@{version}"
+            module_dir = temp_cache / "github.com" / "foo" / f"bar@{version}"
             module_dir.mkdir(parents=True)
             (module_dir / "layouts").mkdir()
 
@@ -238,7 +254,9 @@ class TestHierarchicalCacheStructure:
     """Test hierarchical cache directory handling."""
 
     def test_hierarchical_cache_format(
-        self, temp_project: Path, temp_cache: Path,
+        self,
+        temp_project: Path,
+        temp_cache: Path,
     ) -> None:
         """Test resolving from hierarchical cache (domain/module@version)."""
         # Create hierarchical structure
@@ -348,8 +366,6 @@ class TestFullModuleResolution:
         (layouts / "_partials" / "header.html").write_text("header")
 
         # Create module object
-        from hugo_template_dependencies.graph.hugo_graph import HugoModule
-
         module = HugoModule(
             path="../test-module",
             version=None,
@@ -419,13 +435,17 @@ class TestExampleSiteRealData:
         """Test resolution logic matching exampleSite structure."""
         # Simulate exampleSite structure
         # exampleSite is at: project/.github/exampleSite
+        # From exampleSite, ../../.. goes to parent of project
         github_dir = temp_project / ".github"
         github_dir.mkdir()
         examplesite = github_dir / "exampleSite"
         examplesite.mkdir()
 
-        # Create theme root with layouts (../../.. from exampleSite)
-        theme_layouts = temp_project / "layouts" / "_partials"
+        # Create theme root with layouts at actual ../../.. location
+        # ../../.. from project/.github/exampleSite = temp_project.parent.parent.parent
+        # But for testing, we create it at the resolved location
+        theme_root = (examplesite / "../../..").resolve()
+        theme_layouts = theme_root / "layouts" / "_partials"
         theme_layouts.mkdir(parents=True)
         (theme_layouts / "calendar_icon.html").write_text("icon")
 
@@ -462,7 +482,7 @@ class TestExampleSiteRealData:
         )
 
         assert resolved1 is not None
-        assert resolved1 == temp_project
+        assert resolved1 == theme_root
         assert (resolved1 / "layouts" / "_partials" / "calendar_icon.html").exists()
 
         # Resolve second import (golang.foundata.com/hugo-theme-dev)

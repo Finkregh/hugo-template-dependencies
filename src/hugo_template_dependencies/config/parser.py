@@ -43,8 +43,9 @@ class HugoConfigParser:
         try:
             # Execute hugo config command in project directory
             result = subprocess.run(
-                ["hugo", "config"],
+                ["hugo", "config"],  # noqa: S607
                 cwd=project_path,
+                check=True,
                 capture_output=True,
                 text=True,
                 timeout=30,
@@ -122,7 +123,7 @@ class HugoConfigParser:
                 # Parse format: "original -> replacement"
                 if "->" in replacement:
                     parts = replacement.split("->", 1)
-                    if len(parts) == 2:
+                    if len(parts) == 2:  # noqa: PLR2004
                         original = parts[0].strip()
                         replaced = parts[1].strip()
                         replacements[original] = replaced
@@ -170,7 +171,7 @@ class HugoConfigParser:
         logger.debug(f"Using default Hugo cache location: {default_cache}")
         return default_cache
 
-    def resolve_module_path(
+    def resolve_module_path(  # noqa: PLR0912, PLR0915, PLR0911
         self,
         module_import: dict[str, Any],
         project_path: Path,
@@ -262,20 +263,19 @@ class HugoConfigParser:
             # Replacement path doesn't exist locally, try cachedir with version
             if cachedir and version:
                 cache_path = self._resolve_from_cache(
-                    replacement_path,
-                    version,
-                    cachedir,
+                    module_path=module_path_str,
+                    version=version,
+                    cachedir=cachedir,
                 )
                 if cache_path:
                     logger.debug(f"  ✓ Resolved replacement from cache: {cache_path}")
                     return cache_path
                 logger.debug("  ✗ Replacement not found in cache")
 
-            # Replacement failed completely
-            logger.warning(
-                f"Could not resolve module replacement: {module_path_str} -> {replacement_path}",
+            # Replacement failed - fall through to regular module resolution
+            logger.debug(
+                f"Replacement not resolved locally or in cache: {module_path_str} -> {replacement_path}. Attempting regular resolution.",
             )
-            return None
 
         # No replacement - handle as regular module
         # Check if it's a local relative path
@@ -370,7 +370,7 @@ class HugoConfigParser:
         # Remote modules contain domain-like structure
         # Must have "/" AND first part must look like domain (contains ".")
         if "/" in module_path:
-            first_part = module_path.split("/")[0]
+            first_part = module_path.split("/", maxsplit=1)[0]
             return "." in first_part
 
         return False
@@ -391,13 +391,18 @@ class HugoConfigParser:
         Args:
             module_path: Module path
             version: Specific version to find
-            cachedir: Hugo cache directory
+            cachedir: Hugo cache directory or cache base (ends with .../pkg/mod)
 
         Returns:
             Path to module in cache, or None if not found
 
         """
-        cache_base = cachedir / "modules" / "filecache" / "modules" / "pkg" / "mod"
+        # Check if cachedir is already the full cache base path
+        if cachedir.name == "mod" and cachedir.parent.name == "pkg":
+            cache_base = cachedir
+        else:
+            # Add the standard Hugo cache subdirectory structure
+            cache_base = cachedir / "modules" / "filecache" / "modules" / "pkg" / "mod"
 
         if not cache_base.exists():
             logger.debug(f"  Cache base does not exist: {cache_base}")
@@ -410,7 +415,7 @@ class HugoConfigParser:
             return flat_path
 
         # Try without version suffix (e.g., v1.0.0+vendor -> v1.0.0)
-        base_version = version.split("+")[0]
+        base_version = version.split("+", maxsplit=1)[0]
         if base_version != version:
             flat_base_path = cache_base / f"{module_path}@{base_version}"
             if flat_base_path.exists():
@@ -453,13 +458,18 @@ class HugoConfigParser:
 
         Args:
             module_path: Module path
-            cachedir: Hugo cache directory
+            cachedir: Hugo cache directory or cache base (ends with .../pkg/mod)
 
         Returns:
             Path to latest module version, or None if not found
 
         """
-        cache_base = cachedir / "modules" / "filecache" / "modules" / "pkg" / "mod"
+        # Check if cachedir is already the full cache base path
+        if cachedir.name == "mod" and cachedir.parent.name == "pkg":
+            cache_base = cachedir
+        else:
+            # Add the standard Hugo cache subdirectory structure
+            cache_base = cachedir / "modules" / "filecache" / "modules" / "pkg" / "mod"
 
         if not cache_base.exists():
             logger.debug(f"  Cache base does not exist: {cache_base}")
@@ -471,7 +481,7 @@ class HugoConfigParser:
             preferred_version=None,
         )
 
-    def _scan_cache_for_module(
+    def _scan_cache_for_module(  # noqa: PLR0912, PLR0915
         self,
         cache_base: Path,
         module_path_str: str,
@@ -500,10 +510,11 @@ class HugoConfigParser:
         matching_dirs = []
 
         # Strategy 1: Flat directory format (module/path@version)
+        # Strategy 1: Flat directory format (module/path@version)
         try:
             all_entries = list(cache_base.iterdir())
             logger.debug(
-                f"Scanning {len(all_entries)} cache entries for module: {module_path_str}"
+                f"Scanning {len(all_entries)} cache entries for module: {module_path_str}",
             )
 
             for entry in all_entries:
@@ -525,26 +536,31 @@ class HugoConfigParser:
                     # If this entry is the domain directory
                     if entry.name == domain and module_name:
                         logger.debug(f"  ✓ Found domain directory: {entry.name}")
-                        # Look inside for module@version directories
+                        # Recursively search for module@version directories
+                        # Hugo cache can be deeply nested: github.com/org/subdir/module@version
                         try:
                             domain_matches = []
-                            for subentry in entry.iterdir():
-                                if not subentry.is_dir():
-                                    continue
-                                if subentry.name.startswith(f"{module_name}@"):
+                            # Get the module basename (last component before @version)
+                            module_basename = module_name.split("/")[-1]
+
+                            # Use rglob to recursively find directories matching pattern
+                            for match in entry.rglob(f"{module_basename}@*"):
+                                if match.is_dir():
                                     logger.debug(
-                                        f"    ✓ Found hierarchical match: {subentry.name}"
+                                        f"    ✓ Found hierarchical match: {match.relative_to(cache_base)}",
                                     )
-                                    matching_dirs.append(subentry)
-                                    domain_matches.append(subentry.name)
+                                    matching_dirs.append(match)
+                                    domain_matches.append(
+                                        str(match.relative_to(cache_base))
+                                    )
 
                             if not domain_matches:
                                 logger.debug(
-                                    f"    ✗ No matches in domain {domain} for module {module_name}"
+                                    f"    ✗ No matches in domain {domain} for module {module_name}",
                                 )
                         except Exception as e:
                             logger.debug(
-                                f"    Error scanning domain directory {domain}: {e}"
+                                f"    Error scanning domain directory {domain}: {e}",
                             )
         except Exception as e:
             logger.warning(f"Error iterating cache directory: {e}")

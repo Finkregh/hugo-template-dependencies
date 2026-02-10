@@ -203,7 +203,7 @@ class TestJSONFormatter:
             },
         }
 
-        result = json_formatter.validate_json_schema(valid_data)
+        result = json_formatter.validate_json_schema(json_data=valid_data)
 
         assert result["valid"] is True
         assert len(result["errors"]) == 0
@@ -219,7 +219,7 @@ class TestJSONFormatter:
             # Missing "edges" field
         }
 
-        result = json_formatter.validate_json_schema(invalid_data)
+        result = json_formatter.validate_json_schema(json_data=invalid_data)
 
         assert result["valid"] is False
         assert len(result["errors"]) > 0
@@ -238,7 +238,7 @@ class TestJSONFormatter:
             "edges": [],
         }
 
-        result = json_formatter.validate_json_schema(invalid_data)
+        result = json_formatter.validate_json_schema(json_data=invalid_data)
 
         assert result["valid"] is False
         assert len(result["errors"]) > 0
@@ -268,7 +268,7 @@ class TestJSONFormatter:
             },
         }
 
-        result = json_formatter.validate_json_schema(data_with_orphans)
+        result = json_formatter.validate_json_schema(json_data=data_with_orphans)
 
         # Should be valid but with warnings
         assert result["valid"] is True

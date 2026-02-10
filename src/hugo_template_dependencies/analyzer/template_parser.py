@@ -384,7 +384,11 @@ class HugoTemplateParser:
         # Extract block usage with enhanced tracking
         for match in self.patterns["block_use"].finditer(content):
             block_name = match.group(1)
-            block_params = match.group(2).strip() if len(match.groups()) >= 2 and match.group(2) else ""
+            block_params = (
+                match.group(2).strip()
+                if len(match.groups()) >= 2 and match.group(2)
+                else ""
+            )
             block_content = match.group(3) if len(match.groups()) >= 3 else ""
 
             line_number = self._get_accurate_line_number(content, match.start())
@@ -583,21 +587,23 @@ class HugoTemplateParser:
 
         Returns:
             TemplateType enum value for mermaid styling and graph classification
+
         """
         # Check for partials directory (both _partials and partials supported)
         is_partial = "_partials" in file_path.parts or "partials" in file_path.parts
 
         # Check for shortcodes directory
-        is_shortcode = "_shortcodes" in file_path.parts or "shortcodes" in file_path.parts
+        is_shortcode = (
+            "_shortcodes" in file_path.parts or "shortcodes" in file_path.parts
+        )
 
         if is_partial:
             return TemplateType.PARTIAL
-        elif is_shortcode:
+        if is_shortcode:
             return TemplateType.SHORTCODE
-        else:
-            # All files in layouts/ (not in special subdirs) are regular templates
-            # This includes baseof.html, home.html, single.html, list.html, etc.
-            return TemplateType.TEMPLATE
+        # All files in layouts/ (not in special subdirs) are regular templates
+        # This includes baseof.html, home.html, single.html, list.html, etc.
+        return TemplateType.TEMPLATE
 
     def _get_context(
         self,

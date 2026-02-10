@@ -6,10 +6,15 @@ into Mermaid diagram format for visualization.
 
 from __future__ import annotations
 
+import os
+import re
+from collections import defaultdict
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from hugo_template_dependencies.graph.base import GraphBase
+    from hugo_template_dependencies.graph.hugo_graph import HugoDependencyGraph
 
 
 class MermaidFormatter:
@@ -47,7 +52,7 @@ class MermaidFormatter:
         mermaid_lines = [f"graph {direction}"]
 
         # Add nodes with proper labeling
-        nodes = self._get_formatted_nodes(include_metadata)
+        nodes = self._get_formatted_nodes(include_metadata=include_metadata)
         mermaid_lines.extend(nodes)
 
         # Add edges with relationships
@@ -60,7 +65,7 @@ class MermaidFormatter:
 
         return "\n".join(mermaid_lines)
 
-    def _get_formatted_nodes(self, include_metadata: bool) -> list[str]:
+    def _get_formatted_nodes(self, *, include_metadata: bool) -> list[str]:
         """Get formatted node definitions.
 
         Args:
@@ -73,11 +78,13 @@ class MermaidFormatter:
         nodes = []
 
         for node_id, data in self.graph.graph.nodes(data=True):
-            label = self._get_node_label(node_id, data, include_metadata)
+            label = self._get_node_label(
+                node_id, data, include_metadata=include_metadata
+            )
             node_type = data.get("type", "unknown")
 
             # Style nodes based on type
-            style = self._get_node_style(node_type)
+            style = self._get_node_style(node_type=node_type)
             nodes.append(f'    {self._sanitize_id(node_id, data)}["{label}"]{style}')
 
         return nodes
@@ -93,7 +100,7 @@ class MermaidFormatter:
 
         for source, target, data in self.graph.graph.edges(data=True):
             relationship = data.get("relationship", "depends on")
-            edge_label = self._get_edge_label(relationship)
+            edge_label = self._get_edge_label(relationship=relationship)
 
             # Get node data for proper sanitization
             source_data = self.graph.graph.nodes.get(source, {})
@@ -109,15 +116,13 @@ class MermaidFormatter:
 
         return edges
 
-    def _get_subgraphs(self) -> list[str]:
+    def _get_subgraphs(self) -> list[str]:  # noqa: PLR0912
         """Get formatted subgraph definitions by template source.
 
         Returns:
             List of formatted subgraph definitions grouped by source
 
         """
-        from collections import defaultdict
-
         subgraphs = []
         source_groups = defaultdict(list)
 
@@ -135,10 +140,6 @@ class MermaidFormatter:
             # Format source name for display
             # Try to get display name from HugoDependencyGraph if available
             try:
-                from hugo_template_dependencies.graph.hugo_graph import (
-                    HugoDependencyGraph,
-                )
-
                 if isinstance(self.graph, HugoDependencyGraph):
                     source_display = self.graph.get_display_name_for_source(source)
                 else:
@@ -154,10 +155,6 @@ class MermaidFormatter:
 
             # Create meaningful subgraph ID based on display name
             try:
-                from hugo_template_dependencies.graph.hugo_graph import (
-                    HugoDependencyGraph,
-                )
-
                 if isinstance(self.graph, HugoDependencyGraph):
                     display_name = self.graph.get_display_name_for_source(source)
                     # Extract module name from "Module: hugo-theme-component-ical"
@@ -189,6 +186,7 @@ class MermaidFormatter:
         self,
         node_id: str,
         data: dict[str, Any],
+        *,
         include_metadata: bool,
     ) -> str:
         """Get label for a node.
@@ -217,7 +215,7 @@ class MermaidFormatter:
 
         return display_name
 
-    def _get_node_style(self, node_type: str) -> str:
+    def _get_node_style(self, *, node_type: str) -> str:
         """Get styling for a node based on its type.
 
         Args:
@@ -236,7 +234,7 @@ class MermaidFormatter:
         }
         return styles.get(node_type, "")
 
-    def _get_edge_label(self, relationship: str) -> str:
+    def _get_edge_label(self, *, relationship: str) -> str:
         """Get label for an edge based on relationship type.
 
         Args:
@@ -254,7 +252,11 @@ class MermaidFormatter:
         }
         return labels.get(relationship, "")
 
-    def _sanitize_id(self, node_id: str, node_data: dict[str, Any] | None = None) -> str:
+    def _sanitize_id(  # noqa: PLR0912, PLR0915
+        self,
+        node_id: str,
+        node_data: dict[str, Any] | None = None,
+    ) -> str:
         """Sanitize node ID for Mermaid compatibility.
 
         Creates meaningful IDs by extracting relative path context with source prefixes:
@@ -273,14 +275,11 @@ class MermaidFormatter:
             Sanitized node ID with source prefix and meaningful path context
 
         """
-        import os
-        from pathlib import Path
-
         # Handle module node IDs that start with "module:"
         if node_id.startswith("module:"):
             module_path = node_id[7:]  # Remove "module:" prefix
             # Extract module name (last part of path)
-            if "/" in module_path:
+            if "/" in module_path:  # noqa: SIM108
                 module_name = module_path.split("/")[-1]
             else:
                 module_name = module_path
@@ -306,20 +305,19 @@ class MermaidFormatter:
                 if hasattr(self.graph, "get_display_name_for_source"):
                     try:
                         display_name = self.graph.get_display_name_for_source(source)  # type: ignore[attr-defined]
-                        if display_name.startswith("Module: "):
+                        if display_name.startswith("Module: "):  # noqa: SIM108
                             # Extract module name from "Module: hugo-theme-dev" format
                             module_name = display_name[8:]  # Remove "Module: " prefix
                         else:
                             module_name = source
-                    except Exception:
+                    except Exception:  # noqa: BLE001
                         # Fallback if method fails
                         module_name = source
+                # Fallback: extract from source path
+                elif "/" in source:
+                    module_name = source.split("/")[-1]
                 else:
-                    # Fallback: extract from source path
-                    if "/" in source:
-                        module_name = source.split("/")[-1]
-                    else:
-                        module_name = source
+                    module_name = source
 
                 # Sanitize module name
                 source_prefix = module_name.replace("-", "_").replace(".", "_")
@@ -335,16 +333,14 @@ class MermaidFormatter:
                 layouts_index = parts.index("layouts")
                 # Get path relative to layouts directory
                 relative_parts = parts[layouts_index + 1 :]
-                if relative_parts:
-                    meaningful_path = "/".join(relative_parts)
-                else:
-                    meaningful_path = path_obj.name
+                meaningful_path = (
+                    "/".join(relative_parts) if relative_parts else path_obj.name
+                )
+            # Fallback: use just the filename with parent directory for context
+            elif len(parts) >= 2:
+                meaningful_path = f"{parts[-2]}/{parts[-1]}"
             else:
-                # Fallback: use just the filename with parent directory for context
-                if len(parts) >= 2:
-                    meaningful_path = f"{parts[-2]}/{parts[-1]}"
-                else:
-                    meaningful_path = path_obj.name
+                meaningful_path = path_obj.name
 
         except (ValueError, IndexError):
             meaningful_path = node_id
@@ -365,7 +361,6 @@ class MermaidFormatter:
         sanitized_path = sanitized_path.replace(":", "_").replace("@", "_")
 
         # Clean up consecutive underscores
-        import re
 
         sanitized_path = re.sub(r"_+", "_", sanitized_path)
 

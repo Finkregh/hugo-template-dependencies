@@ -15,7 +15,6 @@ from hugo_template_dependencies.config.parser import HugoConfigParser
 from hugo_template_dependencies.graph.hugo_graph import (
     HugoModule,
     HugoTemplate,
-    TemplateType,
 )
 
 if TYPE_CHECKING:
@@ -203,7 +202,7 @@ class HugoModuleResolver:
                 template = HugoTemplate(
                     file_path=template_file,
                     template_type=HugoTemplateParser._determine_template_type(
-                        template_file
+                        template_file,
                     ),
                     source=module.path,  # Add source information
                 )

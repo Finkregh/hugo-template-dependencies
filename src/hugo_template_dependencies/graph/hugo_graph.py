@@ -403,6 +403,7 @@ class HugoTemplate:
 
         Returns:
             String representing the display path for this template
+
         """
         # Find layouts directory in the path
         try:
@@ -412,9 +413,8 @@ class HugoTemplate:
                 # Return path relative to layouts directory
                 relative_parts = parts[layouts_index + 1 :]
                 return "/".join(relative_parts)
-            else:
-                # File not in layouts, return relative path from project root
-                return str(self.file_path)
+            # File not in layouts, return relative path from project root
+            return str(self.file_path)
         except (ValueError, IndexError):
             # Fallback to current behavior for edge cases
             return self.file_path.name
