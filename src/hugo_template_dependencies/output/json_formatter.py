@@ -462,7 +462,7 @@ class JSONFormatter:
             Dictionary containing graph statistics
 
         """
-        stats = {
+        stats: dict[str, int | bool] = {
             "total_nodes": self.graph.get_node_count(),
             "total_edges": self.graph.get_edge_count(),
             "has_cycles": self.graph.has_cycles(),

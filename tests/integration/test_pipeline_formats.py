@@ -95,7 +95,7 @@ class TestPipelineFormats:
             if output_path.exists():
                 output_path.unlink()
 
-    def test_dot_output_format(self, temp_hugo_project) -> None:
+    def test_dot_output_format(self, temp_hugo_project: Path) -> None:
         """Test DOT format output generation."""
         with tempfile.NamedTemporaryFile(
             mode="w",

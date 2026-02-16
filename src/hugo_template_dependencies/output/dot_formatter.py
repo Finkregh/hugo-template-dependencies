@@ -6,7 +6,6 @@ into DOT format for Graphviz visualization and rendering.
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -197,7 +196,8 @@ class DOTFormatter:
 
             if include_styles:
                 attributes = self._get_edge_attributes(
-                    relationship=relationship, data=data,
+                    relationship=relationship,
+                    data=data,
                 )
                 attributes_str = f" [{attributes}]" if attributes else ""
             else:
@@ -207,7 +207,7 @@ class DOTFormatter:
 
         return edges
 
-    def _get_subgraphs(self, *, include_styles: bool = True) -> list[list[str]]:
+    def _get_subgraphs(self, *, include_styles: bool = True) -> list[list[str]]:  # noqa: PLR0912 needs_refactoring
         """Get formatted subgraph definitions by template directory and type.
 
         Args:
@@ -280,7 +280,8 @@ class DOTFormatter:
                     sanitized_id = self._sanitize_id(node_id=node_id, node_data=data)
                     if include_styles:
                         attributes = self._get_node_attributes(
-                            node_type=node_type, data=data,
+                            node_type=node_type,
+                            data=data,
                         )
                         attributes_str = f" [{attributes}]" if attributes else ""
                     else:
@@ -385,7 +386,7 @@ class DOTFormatter:
         if data.get("context"):
             context = (
                 data["context"][:50] + "..."
-                if len(data["context"]) > 50
+                if len(data["context"]) > 50  # noqa: PLR2004 needs_refactoring
                 else data["context"]
             )
             attributes.append(f'tooltip="{context}"')
@@ -567,7 +568,7 @@ class DOTFormatter:
             "    // Default attributes are set in graph header",
         ]
 
-    def _sanitize_id(
+    def _sanitize_id(  # noqa: PLR0912, PLR0915 needs_refactoring
         self,
         *,
         node_id: str,
@@ -616,13 +617,13 @@ class DOTFormatter:
                 if hasattr(self.graph, "get_display_name_for_source"):
                     try:
                         display_name = self.graph.get_display_name_for_source(source)  # type: ignore[attr-defined]
-                        if display_name.startswith("Module: "):
+                        if display_name.startswith("Module: "):  # noqa: SIM108
                             # Extract module name from "Module: hugo-theme-dev" format
                             module_name = display_name[8:]  # Remove "Module: " prefix
                         else:
                             module_name = source
-                    except Exception:
-                        # Fallback if method fails
+                    except (AttributeError, KeyError, TypeError):
+                        # Fallback if method fails or returns unexpected type
                         module_name = source
                 # Fallback: extract from source path
                 elif "/" in source:
@@ -651,7 +652,7 @@ class DOTFormatter:
                     "/".join(relative_parts) if relative_parts else path_obj.name
                 )
             # Fallback: use just the filename with parent directory for context
-            elif len(parts) >= 2:
+            elif len(parts) >= 2:  # noqa: PLR2004
                 meaningful_path = f"{parts[-2]}/{parts[-1]}"
             else:
                 meaningful_path = path_obj.name
@@ -665,7 +666,13 @@ class DOTFormatter:
 
         # Remove file extension for cleaner display
         if "." in meaningful_path:
-            meaningful_path = os.path.splitext(meaningful_path)[0]
+            path_obj = Path(meaningful_path)
+            # Reconstruct path: parent parts + stem (filename without extension)
+            meaningful_path = (
+                str(path_obj.parent / path_obj.stem)
+                if path_obj.parent != Path()
+                else path_obj.stem
+            )
 
         # Replace path separators and problematic characters while preserving directory structure
         sanitized_path = meaningful_path.replace("/", "_").replace("\\", "_")

@@ -10,7 +10,7 @@ import time
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING
 
 from rich.console import Console
 from rich.panel import Panel
@@ -27,6 +27,11 @@ from rich.progress import (
 from rich.table import Table
 from rich.text import Text
 from typing_extensions import Self
+
+if TYPE_CHECKING:
+    import types
+
+MANY_FILES_THRESHOLD = 1000
 
 
 class AnalysisPhase(Enum):
@@ -96,7 +101,7 @@ class ProgressReporter:
         self,
         console: Console | None = None,
         *,
-        show_progress: bool = True,
+        show_progress: bool | None = True,
     ) -> None:
         """Initialize progress reporter.
 
@@ -194,7 +199,12 @@ class ProgressReporter:
 
         # For large projects (>1000 files), update progress less frequently to improve performance
         if self.show_progress and self.progress and "main" in self.tasks:
-            if total and total > 1000 and processed % 10 != 0 and processed != total:
+            if (
+                total
+                and total > MANY_FILES_THRESHOLD
+                and processed % 10 != 0
+                and processed != total
+            ):
                 # Skip updates for large projects except every 10 files or final update
                 return
             self.progress.update(self.tasks["main"], completed=processed, total=total)
@@ -403,7 +413,12 @@ class ProgressReporter:
             self.progress.start()
         return self
 
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: types.TracebackType | None,
+    ) -> None:
         """Context manager exit."""
         if self.show_progress and self.progress:
             self.progress.stop()

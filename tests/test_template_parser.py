@@ -3,6 +3,8 @@
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
+import pytest
+
 from hugo_template_dependencies.analyzer.template_parser import (
     HugoTemplateParser,
 )
@@ -173,12 +175,8 @@ class TestHugoTemplateParser:
 
     def test_parse_file_nonexistent(self) -> None:
         """Test parsing non-existent file fails gracefully."""
-        try:
+        with pytest.raises(FileNotFoundError, match="Template file not found"):
             self.parser.parse_file(Path("/nonexistent/file.html"))
-            msg = "Should have raised FileNotFoundError"
-            raise AssertionError(msg)
-        except FileNotFoundError as e:
-            assert "Template file not found" in str(e)
 
     def test_parse_file_integration(self) -> None:
         """Test parsing a complete template file."""

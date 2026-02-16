@@ -558,11 +558,11 @@ class HugoConfigParser:
                                 logger.debug(
                                     f"    ✗ No matches in domain {domain} for module {module_name}",
                                 )
-                        except Exception as e:
+                        except OSError as e:
                             logger.debug(
                                 f"    Error scanning domain directory {domain}: {e}",
                             )
-        except Exception as e:
+        except OSError as e:
             logger.warning(f"Error iterating cache directory: {e}")
             return None
 
@@ -612,7 +612,7 @@ class HugoConfigParser:
             if selected:
                 logger.debug(f"Selected module directory: {selected}")
             return selected
-        except Exception as e:
+        except (ValueError, AttributeError) as e:
             logger.warning(f"Error sorting module versions: {e}")
             # Fallback to first available if sorting fails
             fallback = matching_dirs[0] if matching_dirs else None

@@ -10,7 +10,13 @@ dependency graph showing relationships between Hugo template files across themes
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from enum import Enum
 from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
 
 import networkx as nx
 
@@ -300,10 +306,9 @@ class HugoDependencyGraph(GraphBase):
         cycles = []
         try:
             # Use NetworkX cycle detection
-            for cycle in nx.simple_cycles(self.graph):
-                cycles.append(list(cycle))
-        except Exception:
-            # Fallback: manual cycle detection
+            cycles.extend(list(cycle) for cycle in nx.simple_cycles(self.graph))
+        except (nx.NetworkXError, ValueError, RuntimeError):
+            # Fallback: manual cycle detection for directed graph issues
             cycles = self._detect_cycles_manually()
 
         return cycles
@@ -347,14 +352,6 @@ class HugoDependencyGraph(GraphBase):
                 dfs(node, [])
 
         return cycles
-
-
-# Data classes for Hugo templates and modules
-from dataclasses import dataclass
-from enum import Enum
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 
 class TemplateType(Enum):

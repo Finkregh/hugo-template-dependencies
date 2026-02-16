@@ -86,7 +86,7 @@ def _build_partial_lookup(parsed_templates: dict, project_path: Path) -> dict:
             lookup[path.name] = template
 
             # Store as: "partials/subdir/name.html" for nested partials
-            if len(relative_path.parts) > 2:
+            if len(relative_path.parts) > 2:  # noqa: PLR2004 needs_refactoring
                 # e.g., "_partials/recurrence/debug_output.html" -> "recurrence/debug_output.html"
                 subpath = Path(*relative_path.parts[1:])
                 lookup[str(subpath)] = template
@@ -97,7 +97,7 @@ def _build_partial_lookup(parsed_templates: dict, project_path: Path) -> dict:
 @app.command()
 def analyze(  # noqa: PLR0912, PLR0915, PLR0913
     project_path: Path = typer.Argument(
-        Path.cwd(),
+        default_factory=Path.cwd,
         help="Path to Hugo project directory (defaults to current directory)",
         exists=True,
         file_okay=False,
@@ -123,11 +123,12 @@ def analyze(  # noqa: PLR0912, PLR0915, PLR0913
         help="Include dependencies from Hugo modules",
         show_default=True,
     ),
-    ignore_patterns: list[str] = typer.Option(
-        [],
-        "--ignore",
-        help="Patterns to ignore (can be used multiple times)",
-    ),
+    # not implemented yet
+    # ignore_patterns: list[str] = typer.Option(
+    #     [],
+    #     "--ignore",
+    #     help="Patterns to ignore (can be used multiple times)",
+    # ),
     show_progress: bool = typer.Option(
         True,
         "--progress/--no-progress",
@@ -242,7 +243,7 @@ def analyze(  # noqa: PLR0912, PLR0915, PLR0913
                     progress_reporter.update_subtask("modules", i + 1, len(modules))
                     module_templates = module_resolver.discover_module_templates(module)
                     templates.extend(module_templates)
-                except Exception as e:
+                except (OSError, ValueError) as e:
                     error_handler.handle_dependency_resolution_error(
                         source_file=project_path,
                         target_dependency=str(module),
@@ -275,7 +276,7 @@ def analyze(  # noqa: PLR0912, PLR0915, PLR0913
                     status_console.print(
                         f"[dim cyan]  Set {len(replacement_mappings)} replacement mappings[/dim cyan]",
                     )
-        except Exception as e:
+        except (OSError, ValueError, KeyError) as e:
             # Non-critical error, continue without replacement mappings
             if effective_debug:
                 status_console.print(
@@ -316,12 +317,12 @@ def analyze(  # noqa: PLR0912, PLR0915, PLR0913
                                 f"[dim]       • {dep['type']}:[/dim] [green]{dep['target']}[/green] "
                                 f"[dim](line {dep['line_number']})[/dim]",
                             )
-                        if len(parsed.dependencies) > 3:
+                        if len(parsed.dependencies) > 3:  # noqa: PLR2004 needs_refactoring
                             status_console.print(
                                 f"[dim]       ... and {len(parsed.dependencies) - 3} more[/dim]",
                             )
 
-            except Exception as e:
+            except (OSError, ValueError, KeyError, UnicodeDecodeError) as e:
                 # Enhanced error handling with context
                 error_handler.handle_template_parsing_error(
                     file_path=template.file_path,
@@ -348,7 +349,7 @@ def analyze(  # noqa: PLR0912, PLR0915, PLR0913
                 status_console.print(
                     f'[dim]    • "{ref_name}" → {template.file_path.name}[/dim]',
                 )
-            if len(partial_lookup) > 5:
+            if len(partial_lookup) > 5:  # noqa: PLR2004 needs_refactoring
                 status_console.print(
                     f"[dim]    ... and {len(partial_lookup) - 5} more mappings[/dim]",
                 )
@@ -413,7 +414,7 @@ def analyze(  # noqa: PLR0912, PLR0915, PLR0913
                                         f"Could not resolve {dep['type']} reference: {target_name}",
                                     ),
                                 )
-            except Exception as e:
+            except (OSError, ValueError, KeyError) as e:
                 # Enhanced error handling with context
                 error_handler.handle_template_parsing_error(
                     file_path=Path(template_path),
@@ -469,7 +470,7 @@ def analyze(  # noqa: PLR0912, PLR0915, PLR0913
                                         f"Could not resolve {dep['type']} reference: {target_name}",
                                     ),
                                 )
-            except Exception as e:
+            except (OSError, ValueError, KeyError) as e:
                 # Enhanced error handling with context
                 error_handler.handle_template_parsing_error(
                     file_path=Path(template_path),

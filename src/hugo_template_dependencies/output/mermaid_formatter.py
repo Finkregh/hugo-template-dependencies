@@ -6,7 +6,6 @@ into Mermaid diagram format for visualization.
 
 from __future__ import annotations
 
-import os
 import re
 from collections import defaultdict
 from pathlib import Path
@@ -37,6 +36,7 @@ class MermaidFormatter:
     def format_graph(
         self,
         direction: str = "TD",
+        *,
         include_metadata: bool = False,
     ) -> str:
         """Format the graph as Mermaid diagram.
@@ -146,7 +146,7 @@ class MermaidFormatter:
                 if isinstance(self.graph, HugoDependencyGraph):
                     source_display = self.graph.get_display_name_for_source(source)
                 else:
-                    raise AttributeError  # Use fallback
+                    raise TypeError  # Use fallback
             except (AttributeError, ImportError):
                 # Fallback for graphs without replacement support
                 if source == "local":
@@ -340,7 +340,7 @@ class MermaidFormatter:
                     "/".join(relative_parts) if relative_parts else path_obj.name
                 )
             # Fallback: use just the filename with parent directory for context
-            elif len(parts) >= 2:
+            elif len(parts) >= 2:  # noqa: PLR2004
                 meaningful_path = f"{parts[-2]}/{parts[-1]}"
             else:
                 meaningful_path = path_obj.name
@@ -354,7 +354,13 @@ class MermaidFormatter:
 
         # Remove file extension for cleaner display
         if "." in meaningful_path:
-            meaningful_path = os.path.splitext(meaningful_path)[0]
+            path_obj = Path(meaningful_path)
+            # Reconstruct path: parent parts + stem (filename without extension)
+            meaningful_path = (
+                str(path_obj.parent / path_obj.stem)
+                if path_obj.parent != Path()
+                else path_obj.stem
+            )
 
         # Replace path separators and problematic characters
         sanitized_path = meaningful_path.replace("/", "_").replace("\\", "_")
