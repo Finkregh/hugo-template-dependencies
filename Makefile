@@ -20,6 +20,16 @@ test: ## Test the code with pytest
 	@echo "🚀 Testing code: Running pytest"
 	@uv run python -m pytest --cov --cov-config=pyproject.toml --cov-report=xml
 
+.PHONY: nox-test
+nox-test: ## Run tests across multiple Python versions with nox
+	@echo "🚀 Testing code across Python versions with nox"
+	@uvx nox -s test
+
+.PHONY: nox-lint
+nox-lint: ## Run linting with nox
+	@echo "🚀 Running linting with nox"
+	@uvx nox -s lint
+
 .PHONY: build
 build: clean-build ## Build wheel file
 	@echo "🚀 Creating wheel file"
