@@ -87,7 +87,9 @@ class TestPipelineFormats:
             assert "-->" in result, "Mermaid output should contain dependency arrows"
 
             # Check that sanitized node IDs are present
-            assert "baseof_html" in result or "baseof.html" in result, "baseof template should be in output"
+            assert (
+                "baseof_html" in result or "baseof.html" in result
+            ), "baseof template should be in output"
         finally:
             # Clean up
             if output_path.exists():
@@ -143,6 +145,7 @@ class TestPipelineFormats:
 
         result = subprocess.run(
             cmd,
+            check=False,
             capture_output=True,
             text=True,
             cwd=temp_hugo_project,

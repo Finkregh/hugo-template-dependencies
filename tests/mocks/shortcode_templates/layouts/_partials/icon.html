@@ -1,11 +1,11 @@
 {{ $type := . | default "info" }}
-{{ $icons := dict 
-    "info" "ℹ️" 
-    "warning" "⚠️" 
-    "error" "❌" 
-    "success" "✅" 
-    "close" "✕" 
-    "external" "🔗" 
+{{ $icons := dict
+    "info" "ℹ️"
+    "warning" "⚠️"
+    "error" "❌"
+    "success" "✅"
+    "close" "✕"
+    "external" "🔗"
 }}
 {{ $icon := index $icons $type | default "📝" }}
 <span class="icon icon-{{ $type }}">{{ $icon }}</span>

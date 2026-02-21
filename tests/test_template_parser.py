@@ -217,6 +217,7 @@ class TestHugoTemplateParser:
 
             assert template.template_type == TemplateType.TEMPLATE
             assert template.content == content
+            assert template.dependencies is not None
             assert len(template.dependencies) > 0
 
             # Check for expected dependencies

@@ -263,7 +263,7 @@ def analyze(  # noqa: PLR0912, PLR0915, PLR0913
                     progress_reporter.update_subtask("modules", i + 1, len(modules))
                     module_templates = module_resolver.discover_module_templates(module)
                     templates.extend(module_templates)
-                except (OSError, ValueError) as e:
+                except (OSError, ValueError) as e:  # noqa: PERF203
                     error_handler.handle_dependency_resolution_error(
                         source_file=project_path,
                         target_dependency=str(module),
@@ -337,12 +337,17 @@ def analyze(  # noqa: PLR0912, PLR0915, PLR0913
                                 f"[dim]       • {dep['type']}:[/dim] [green]{dep['target']}[/green] "
                                 f"[dim](line {dep['line_number']})[/dim]",
                             )
-                        if len(parsed.dependencies) > 3:  # noqa: PLR2004 needs_refactoring
+                        if len(parsed.dependencies) > 3:  # noqa: PLR2004
                             status_console.print(
                                 f"[dim]       ... and {len(parsed.dependencies) - 3} more[/dim]",
                             )
 
-            except (OSError, ValueError, KeyError, UnicodeDecodeError) as e:
+            except (
+                OSError,
+                ValueError,
+                KeyError,
+                UnicodeDecodeError,
+            ) as e:  # noqa: PERF203
                 # Enhanced error handling with context
                 error_handler.handle_template_parsing_error(
                     file_path=template.file_path,
@@ -458,7 +463,9 @@ def analyze(  # noqa: PLR0912, PLR0915, PLR0913
                                     is_conditional = dep.get("is_conditional", False)
 
                                     # Check if this is a deprecated _internal template
-                                    is_internal_deprecated = target_name.startswith("_internal/")
+                                    is_internal_deprecated = target_name.startswith(
+                                        "_internal/",
+                                    )
 
                                     # Target not found - create a placeholder node
                                     graph.add_include_dependency(
@@ -497,7 +504,7 @@ def analyze(  # noqa: PLR0912, PLR0915, PLR0913
                                             target_dependency=target_name,
                                             error=ValueError(
                                                 f"Hugo _internal template removed in v0.146.0: {target_name}. "
-                                                f'Replace with {{ partial "{target_name.replace("_internal/", "")}" . }}',
+                                                f'Replace with {{ partial "{target_name.replace("_internal/", "")}" . }}',  # noqa: E501
                                             ),
                                         )
                                     elif not is_conditional:
@@ -509,7 +516,7 @@ def analyze(  # noqa: PLR0912, PLR0915, PLR0913
                                                 f"Could not resolve {dep['type']} reference: {target_name}",
                                             ),
                                         )
-            except (OSError, ValueError, KeyError) as e:
+            except (OSError, ValueError, KeyError) as e:  # noqa: PERF203
                 # Enhanced error handling with context
                 error_handler.handle_template_parsing_error(
                     file_path=Path(template_path),
@@ -570,7 +577,9 @@ def analyze(  # noqa: PLR0912, PLR0915, PLR0913
                                     is_conditional = dep.get("is_conditional", False)
 
                                     # Check if this is a deprecated _internal template
-                                    is_internal_deprecated = target_name.startswith("_internal/")
+                                    is_internal_deprecated = target_name.startswith(
+                                        "_internal/",
+                                    )
 
                                     # Target not found - create a placeholder node
                                     graph.add_include_dependency(
@@ -588,7 +597,7 @@ def analyze(  # noqa: PLR0912, PLR0915, PLR0913
                                             target_dependency=target_name,
                                             error=ValueError(
                                                 f"Hugo _internal template removed in v0.146.0: {target_name}. "
-                                                f'Replace with {{ partial "{target_name.replace("_internal/", "")}" . }}',
+                                                f'Replace with {{ partial "{target_name.replace("_internal/", "")}" . }}',  # noqa: E501
                                             ),
                                         )
                                     elif not is_conditional:
@@ -600,7 +609,7 @@ def analyze(  # noqa: PLR0912, PLR0915, PLR0913
                                                 f"Could not resolve {dep['type']} reference: {target_name}",
                                             ),
                                         )
-            except (OSError, ValueError, KeyError) as e:
+            except (OSError, ValueError, KeyError) as e:  # noqa: PERF203
                 # Enhanced error handling with context
                 error_handler.handle_template_parsing_error(
                     file_path=Path(template_path),
@@ -642,11 +651,13 @@ def analyze(  # noqa: PLR0912, PLR0915, PLR0913
                     status_console.print(
                         f"[green]{description} saved to:[/green] {output_file}",
                     )
-            # When not using -o: status messages go to stderr, content to stdout
-            elif not quiet and description != "Output":
-                status_console.print(f"[blue]{description}:[/blue]")
-                # Content always goes to stdout for piping/redirection
-                print(content)  # This was missing!
+            else:
+                # When not using -o: status messages go to stderr, content to stdout
+                if not quiet and description != "Output":
+                    status_console.print(f"[blue]{description}:[/blue]")
+                # Content always goes to stdout for piping/redirection unless quiet
+                if not quiet:
+                    sys.stdout.write(content)
 
         if format == "tree":
             tree = Tree(f"📁 Hugo Project: {project_path.name}")
@@ -680,7 +691,7 @@ def analyze(  # noqa: PLR0912, PLR0915, PLR0913
                     )
             else:
                 # Tree output goes to stdout (via regular console)
-                pass
+                console.print(tree)
 
         elif format == "mermaid":
             formatter = MermaidFormatter(graph)
@@ -732,11 +743,11 @@ def analyze(  # noqa: PLR0912, PLR0915, PLR0913
             error_summary = error_handler.get_error_summary()
             if error_summary["total"] > 0:
                 status_console.print(
-                    f"\n[yellow]⚠[/yellow] Analysis completed with {error_summary['errors']} errors and {error_summary['warnings']} warnings.",
+                    f"\n[yellow]⚠[/yellow] Analysis completed with {error_summary['errors']} errors and {error_summary['warnings']} warnings.",  # noqa: E501
                 )
             else:
                 status_console.print(
-                    f"\n[green]✓[/green] Analysis complete! Found {graph.get_node_count()} nodes and {graph.get_edge_count()} dependencies.",
+                    f"\n[green]✓[/green] Analysis complete! Found {graph.get_node_count()} nodes and {graph.get_edge_count()} dependencies.",  # noqa: E501
                 )
 
     except KeyboardInterrupt:

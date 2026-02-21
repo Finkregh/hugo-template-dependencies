@@ -19,24 +19,24 @@
         <h1>Welcome to {{ .Site.Title }}</h1>
         {{ partial "inline-helper.html" (dict "message" "Page loaded successfully" "timestamp" now.Format "15:04:05") }}
     </header>
-    
+
     <section class="features">
         <div class="feature">
             {{ partial "icon-renderer.html" (dict "type" "info" "title" "Information") }}
             <p>Feature with inline icon</p>
         </div>
-        
+
         <div class="feature">
             {{ partial "icon-renderer.html" (dict "type" "external" "title" "External Link") }}
             <p>External link feature</p>
         </div>
-        
+
         <div class="feature">
             {{ partial "icon-renderer.html" (dict "type" "warning" "title" "Warning") }}
             <p>Warning feature</p>
         </div>
     </section>
-    
+
     <footer>
         {{ partial "inline-helper.html" (dict "message" "Page rendering complete" "timestamp" now.Format "2006-01-02 15:04:05") }}
     </footer>

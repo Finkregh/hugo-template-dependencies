@@ -12,6 +12,7 @@ import re
 import sys
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -365,28 +366,33 @@ class TestArchitecturalFixes(unittest.TestCase):
         # Mock the add_include_dependency to count calls
         original_add = self.graph.add_include_dependency
         call_count = 0
+        original_add = self.graph.add_include_dependency
 
         def counting_add(*args, **kwargs):
             nonlocal call_count
             call_count += 1
             return original_add(*args, **kwargs)
 
-        self.graph.add_include_dependency = counting_add
+        # Mock with proper typing
+        with patch.object(
+            self.graph, "add_include_dependency", side_effect=counting_add
+        ):
+            # Parse dependencies
+            content_str = (
+                str(source_template.content) if source_template.content else ""
+            )
+            dependencies = self.parser.extract_dependencies(content_str)
 
-        # Parse dependencies
-        content_str = str(source_template.content) if source_template.content else ""
-        dependencies = self.parser.extract_dependencies(content_str)
-
-        # Simulate dependency resolution (what CLI does)
-        for dep in dependencies:
-            if dep["type"] == "partial":
-                self.graph.add_include_dependency(
-                    source=source_template,
-                    target=target_template,
-                    include_type=dep["type"],
-                    line_number=dep["line_number"],
-                    context=dep["context"],
-                )
+            # Simulate dependency resolution (what CLI does)
+            for dep in dependencies:
+                if dep["type"] == "partial":
+                    self.graph.add_include_dependency(
+                        source=source_template,
+                        target=target_template,
+                        include_type=dep["type"],
+                        line_number=dep["line_number"],
+                        context=dep["context"],
+                    )
 
         # Should be called exactly once per dependency (no duplicate resolution)
         assert (

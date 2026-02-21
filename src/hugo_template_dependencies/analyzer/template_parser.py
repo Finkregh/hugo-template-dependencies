@@ -364,7 +364,9 @@ class HugoTemplateParser:
         # Extract block definitions with enhanced tracking
         for match in self.patterns["block_def"].finditer(content):
             block_name = match.group(1)
-            block_content = match.group(2) if len(match.groups()) >= 2 else ""  # noqa: PLR2004 needs_refactoring
+            block_content = (
+                match.group(2) if len(match.groups()) >= 2 else ""  # noqa: PLR2004
+            )
 
             line_number = self._get_accurate_line_number(content, match.start())
             context = self._get_enhanced_context(content, match.start(), match.end())
@@ -386,10 +388,12 @@ class HugoTemplateParser:
             block_name = match.group(1)
             block_params = (
                 match.group(2).strip()
-                if len(match.groups()) >= 2 and match.group(2)  # noqa: PLR2004 needs_refactoring
+                if len(match.groups()) >= 2 and match.group(2)  # noqa: PLR2004
                 else ""
             )
-            block_content = match.group(3) if len(match.groups()) >= 3 else ""  # noqa: PLR2004 needs_refactoring
+            block_content = (
+                match.group(3) if len(match.groups()) >= 3 else ""  # noqa: PLR2004
+            )
 
             line_number = self._get_accurate_line_number(content, match.start())
             context = self._get_enhanced_context(content, match.start(), match.end())

@@ -4,11 +4,11 @@
             {{ .context.TableOfContents }}
         </div>
     {{ end }}
-    
+
     <div class="article-content">
         {{ .context.Content }}
     </div>
-    
+
     {{ if .context.Params.callToAction }}
         {{ partial "shared/button.html" (dict "text" .context.Params.callToAction.text "url" .context.Params.callToAction.url "style" "primary" "context" .context) }}
     {{ end }}

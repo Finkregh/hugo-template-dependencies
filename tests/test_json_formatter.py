@@ -3,7 +3,7 @@
 import json
 import tempfile
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -254,17 +254,18 @@ class TestJSONFormatter:
     ) -> None:
         """Test saving with validation failure."""
         # Mock the format method to return invalid JSON
-        json_formatter.format_detailed = Mock(return_value="{invalid json")
+        with patch.object(
+            json_formatter, "format_detailed", return_value="{invalid json"
+        ):
+            with tempfile.TemporaryDirectory() as temp_dir:
+                file_path = Path(temp_dir) / "output.json"
 
-        with tempfile.TemporaryDirectory() as temp_dir:
-            file_path = Path(temp_dir) / "output.json"
-
-            with pytest.raises(ValueError, match="Generated JSON is invalid"):
-                json_formatter.save_to_file(
-                    file_path,
-                    format_type="detailed",
-                    validate_output=True,
-                )
+                with pytest.raises(ValueError, match="Generated JSON is invalid"):
+                    json_formatter.save_to_file(
+                        file_path,
+                        format_type="detailed",
+                        validate_output=True,
+                    )
 
     def test_get_graph_statistics(self, json_formatter: JSONFormatter) -> None:
         """Test graph statistics generation."""
