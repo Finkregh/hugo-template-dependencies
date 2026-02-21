@@ -26,8 +26,8 @@ class TestPipelineFormats:
                 format="json",
                 output_file=output_path,
                 include_modules=False,
-                ignore_patterns=[],
                 show_progress=False,
+                less_verbose=False,
                 quiet=True,
                 verbose=False,
                 debug=False,
@@ -73,8 +73,8 @@ class TestPipelineFormats:
                 format="mermaid",
                 output_file=output_path,
                 include_modules=False,
-                ignore_patterns=[],
                 show_progress=False,
+                less_verbose=False,
                 quiet=True,
                 verbose=False,
                 debug=False,
@@ -87,9 +87,7 @@ class TestPipelineFormats:
             assert "-->" in result, "Mermaid output should contain dependency arrows"
 
             # Check that sanitized node IDs are present
-            assert (
-                "baseof_html" in result or "baseof.html" in result
-            ), "baseof template should be in output"
+            assert "baseof_html" in result or "baseof.html" in result, "baseof template should be in output"
         finally:
             # Clean up
             if output_path.exists():
@@ -110,8 +108,8 @@ class TestPipelineFormats:
                 format="dot",
                 output_file=output_path,
                 include_modules=False,
-                ignore_patterns=[],
                 show_progress=False,
+                less_verbose=False,
                 quiet=True,
                 verbose=False,
                 debug=False,

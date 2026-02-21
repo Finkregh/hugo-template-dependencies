@@ -41,8 +41,8 @@ class TestPipelinePatterns:
                     format="json",
                     output_file=output_path,
                     include_modules=False,
-                    ignore_patterns=[],
                     show_progress=False,
+                    less_verbose=False,
                     quiet=True,
                     verbose=False,
                     debug=False,
@@ -58,9 +58,7 @@ class TestPipelinePatterns:
 
                 # Pattern-specific validations
                 if pattern == "basic_partial_pattern":
-                    assert (
-                        len(nodes) == 2
-                    ), "Basic pattern should have 2 nodes (single.html + header.html)"
+                    assert len(nodes) == 2, "Basic pattern should have 2 nodes (single.html + header.html)"
                     assert len(edges) == 1, "Basic pattern should have 1 edge"
 
                 elif pattern == "nested_partial_chain":
@@ -109,8 +107,8 @@ class TestPipelinePatterns:
                     format="json",
                     output_file=output_path,
                     include_modules=False,
-                    ignore_patterns=[],
                     show_progress=False,
+                    less_verbose=False,
                     quiet=True,
                     verbose=False,
                     debug=False,
@@ -126,36 +124,24 @@ class TestPipelinePatterns:
 
                 # Pattern-specific validations
                 if pattern == "cached_partials":
-                    assert (
-                        len(nodes) == 3
-                    ), "Cached pattern should have 3 nodes (baseof + 2 partials)"
+                    assert len(nodes) == 3, "Cached pattern should have 3 nodes (baseof + 2 partials)"
                     # Note: partialCached calls may not create edges in dependency analysis
 
                 elif pattern == "template_blocks":
-                    assert (
-                        len(nodes) == 2
-                    ), "Template blocks should have 2 nodes (baseof + single)"
+                    assert len(nodes) == 2, "Template blocks should have 2 nodes (baseof + single)"
                     # Note: block inheritance may not create traditional partial edges
 
                 elif pattern == "inline_partials":
-                    assert (
-                        len(nodes) >= 1
-                    ), "Inline pattern should have at least 1 node (home.html)"
+                    assert len(nodes) >= 1, "Inline pattern should have at least 1 node (home.html)"
                     # Note: inline partials ({{ define "_partials/..." }}) may not be detected as separate nodes
 
                 elif pattern == "function_integration":
                     assert len(nodes) == 3, "Function integration should have 3 nodes"
-                    assert (
-                        len(edges) >= 2
-                    ), "Function integration should have partial dependencies"
+                    assert len(edges) >= 2, "Function integration should have partial dependencies"
 
                 elif pattern == "shortcode_templates":
-                    assert (
-                        len(nodes) == 4
-                    ), "Shortcode pattern should have 4 nodes (2 shortcodes + 2 partials)"
-                    assert (
-                        len(edges) >= 2
-                    ), "Shortcode pattern should have shortcode→partial dependencies"
+                    assert len(nodes) == 4, "Shortcode pattern should have 4 nodes (2 shortcodes + 2 partials)"
+                    assert len(edges) >= 2, "Shortcode pattern should have shortcode→partial dependencies"
 
             finally:
                 if output_path.exists():

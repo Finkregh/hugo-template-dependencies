@@ -94,6 +94,28 @@ def _build_partial_lookup(parsed_templates: dict, project_path: Path) -> dict:
     return lookup
 
 
+def _build_block_lookup(parsed_templates: dict) -> dict:
+    """Build a lookup table mapping block definition names to template objects.
+
+    Args:
+        parsed_templates: Dictionary of template path -> HugoTemplate
+
+    Returns:
+        Dictionary mapping block definition names to HugoTemplate objects
+
+    """
+    block_lookup = {}
+
+    for template in parsed_templates.values():
+        if template.dependencies:
+            for dep in template.dependencies:
+                if dep["type"] == "block_definition":
+                    block_name = dep["target"]
+                    block_lookup[block_name] = template
+
+    return block_lookup
+
+
 @app.command()
 def analyze(  # noqa: PLR0912, PLR0915, PLR0913
     project_path: Path = typer.Argument(
@@ -179,9 +201,7 @@ def analyze(  # noqa: PLR0912, PLR0915, PLR0913
     # When using -o flag: status messages to stdout, content to file
     # When not using -o flag: status messages to stderr, content to stdout
     if output_file:
-        status_console = (
-            console  # Use regular console (stdout) when writing content to file
-        )
+        status_console = console  # Use regular console (stdout) when writing content to file
     else:
         status_console = Console(
             file=sys.stderr,
@@ -355,6 +375,30 @@ def analyze(  # noqa: PLR0912, PLR0915, PLR0913
                 )
             status_console.print()
 
+        # Create a lookup table for resolving block definitions to template objects
+        # This maps block definition names (e.g., "RenderImageSimple") to template objects
+        if effective_debug:
+            status_console.print(
+                "[bold cyan]🔍 Building block definition lookup table...[/bold cyan]",
+            )
+
+        block_lookup = _build_block_lookup(parsed_templates)
+
+        if effective_debug:
+            status_console.print(
+                f"[dim cyan]  Found {len(block_lookup)} block definition mappings[/dim cyan]",
+            )
+            # Show some example mappings
+            for _i, (block_name, template) in enumerate(list(block_lookup.items())[:5]):
+                status_console.print(
+                    f'[dim]    • "{block_name}" → {template.file_path.name}[/dim]',
+                )
+            if len(block_lookup) > 5:  # noqa: PLR2004 needs_refactoring
+                status_console.print(
+                    f"[dim]    ... and {len(block_lookup) - 5} more mappings[/dim]",
+                )
+            status_console.print()
+
         # Second pass: resolve and add dependencies
         if effective_debug:
             status_console.print("[bold cyan]🔗 Resolving dependencies...[/bold cyan]")
@@ -387,33 +431,84 @@ def analyze(  # noqa: PLR0912, PLR0915, PLR0913
                                     status_console.print(
                                         f"[dim]  ✓ {parsed.file_path.name}[/dim] "
                                         f"[dim cyan]→[/dim cyan] [green]{target_name}[/green] "
-                                        f"[dim](resolved)[/dim]",
+                                        f"[dim](resolved as partial)[/dim]",
                                     )
                             else:
-                                # Target not found - create a placeholder node
-                                graph.add_include_dependency(
-                                    source=parsed,
-                                    target=target_name,
-                                    include_type=dep["type"],
-                                    line_number=dep["line_number"],
-                                    context=dep["context"],
-                                )
-                                unresolved_count += 1
-
-                                if effective_debug:
-                                    status_console.print(
-                                        f"[dim]  ⚠ {parsed.file_path.name}[/dim] "
-                                        f"[dim cyan]→[/dim cyan] [yellow]{target_name}[/yellow] "
-                                        f"[dim](unresolved)[/dim]",
+                                # Check if it's a block definition
+                                block_template = block_lookup.get(target_name)
+                                if block_template:
+                                    # Use block template as target
+                                    graph.add_include_dependency(
+                                        source=parsed,
+                                        target=block_template,
+                                        include_type=dep["type"],
+                                        line_number=dep["line_number"],
+                                        context=dep["context"],
                                     )
+                                    resolved_count += 1
 
-                                error_handler.handle_dependency_resolution_error(
-                                    source_file=parsed.file_path,
-                                    target_dependency=target_name,
-                                    error=ValueError(
-                                        f"Could not resolve {dep['type']} reference: {target_name}",
-                                    ),
-                                )
+                                    if effective_debug:
+                                        status_console.print(
+                                            f"[dim]  ✓ {parsed.file_path.name}[/dim] "
+                                            f"[dim cyan]→[/dim cyan] [green]{target_name}[/green] "
+                                            f"[dim](resolved as block definition)[/dim]",
+                                        )
+                                else:
+                                    # Check if this dependency is conditional (optional)
+                                    is_conditional = dep.get("is_conditional", False)
+
+                                    # Check if this is a deprecated _internal template
+                                    is_internal_deprecated = target_name.startswith("_internal/")
+
+                                    # Target not found - create a placeholder node
+                                    graph.add_include_dependency(
+                                        source=parsed,
+                                        target=target_name,
+                                        include_type=dep["type"],
+                                        line_number=dep["line_number"],
+                                        context=dep["context"],
+                                    )
+                                    unresolved_count += 1
+
+                                    if effective_debug:
+                                        if is_conditional:
+                                            status_console.print(
+                                                f"[dim]  ~ {parsed.file_path.name}[/dim] "
+                                                f"[dim cyan]→[/dim cyan] [dim yellow]{target_name}[/dim yellow] "
+                                                f"[dim](optional/conditional)[/dim]",
+                                            )
+                                        elif is_internal_deprecated:
+                                            status_console.print(
+                                                f"[dim]  ⚠ {parsed.file_path.name}[/dim] "
+                                                f"[dim cyan]→[/dim cyan] [red]{target_name}[/red] "
+                                                f"[dim](deprecated _internal template)[/dim]",
+                                            )
+                                        else:
+                                            status_console.print(
+                                                f"[dim]  ⚠ {parsed.file_path.name}[/dim] "
+                                                f"[dim cyan]→[/dim cyan] [yellow]{target_name}[/yellow] "
+                                                f"[dim](unresolved)[/dim]",
+                                            )
+
+                                    # Log appropriate error messages
+                                    if is_internal_deprecated:
+                                        error_handler.handle_dependency_resolution_error(
+                                            source_file=parsed.file_path,
+                                            target_dependency=target_name,
+                                            error=ValueError(
+                                                f"Hugo _internal template removed in v0.146.0: {target_name}. "
+                                                f'Replace with {{ partial "{target_name.replace("_internal/", "")}" . }}',
+                                            ),
+                                        )
+                                    elif not is_conditional:
+                                        # Only log error for non-conditional dependencies
+                                        error_handler.handle_dependency_resolution_error(
+                                            source_file=parsed.file_path,
+                                            target_dependency=target_name,
+                                            error=ValueError(
+                                                f"Could not resolve {dep['type']} reference: {target_name}",
+                                            ),
+                                        )
             except (OSError, ValueError, KeyError) as e:
                 # Enhanced error handling with context
                 error_handler.handle_template_parsing_error(
@@ -433,6 +528,10 @@ def analyze(  # noqa: PLR0912, PLR0915, PLR0913
         # Create a lookup table for resolving partial names to actual templates
         # This maps partial reference names (e.g., "recurrence/debug_output.html") to template node IDs
         partial_lookup = _build_partial_lookup(parsed_templates, project_path)
+
+        # Create a lookup table for resolving block definitions to template objects
+        # This maps block definition names (e.g., "RenderImageSimple") to template objects
+        block_lookup = _build_block_lookup(parsed_templates)
 
         # Second pass: resolve and add dependencies
         for template_path, parsed in parsed_templates.items():
@@ -455,21 +554,52 @@ def analyze(  # noqa: PLR0912, PLR0915, PLR0913
                                     context=dep["context"],
                                 )
                             else:
-                                # Target not found - create a placeholder node
-                                graph.add_include_dependency(
-                                    source=parsed,
-                                    target=target_name,
-                                    include_type=dep["type"],
-                                    line_number=dep["line_number"],
-                                    context=dep["context"],
-                                )
-                                error_handler.handle_dependency_resolution_error(
-                                    source_file=parsed.file_path,
-                                    target_dependency=target_name,
-                                    error=ValueError(
-                                        f"Could not resolve {dep['type']} reference: {target_name}",
-                                    ),
-                                )
+                                # Check if it's a block definition
+                                block_template = block_lookup.get(target_name)
+                                if block_template:
+                                    # Use block template as target
+                                    graph.add_include_dependency(
+                                        source=parsed,
+                                        target=block_template,
+                                        include_type=dep["type"],
+                                        line_number=dep["line_number"],
+                                        context=dep["context"],
+                                    )
+                                else:
+                                    # Check if this dependency is conditional (optional)
+                                    is_conditional = dep.get("is_conditional", False)
+
+                                    # Check if this is a deprecated _internal template
+                                    is_internal_deprecated = target_name.startswith("_internal/")
+
+                                    # Target not found - create a placeholder node
+                                    graph.add_include_dependency(
+                                        source=parsed,
+                                        target=target_name,
+                                        include_type=dep["type"],
+                                        line_number=dep["line_number"],
+                                        context=dep["context"],
+                                    )
+
+                                    # Log appropriate error messages
+                                    if is_internal_deprecated:
+                                        error_handler.handle_dependency_resolution_error(
+                                            source_file=parsed.file_path,
+                                            target_dependency=target_name,
+                                            error=ValueError(
+                                                f"Hugo _internal template removed in v0.146.0: {target_name}. "
+                                                f'Replace with {{ partial "{target_name.replace("_internal/", "")}" . }}',
+                                            ),
+                                        )
+                                    elif not is_conditional:
+                                        # Only log error for non-conditional dependencies
+                                        error_handler.handle_dependency_resolution_error(
+                                            source_file=parsed.file_path,
+                                            target_dependency=target_name,
+                                            error=ValueError(
+                                                f"Could not resolve {dep['type']} reference: {target_name}",
+                                            ),
+                                        )
             except (OSError, ValueError, KeyError) as e:
                 # Enhanced error handling with context
                 error_handler.handle_template_parsing_error(
@@ -516,6 +646,7 @@ def analyze(  # noqa: PLR0912, PLR0915, PLR0913
             elif not quiet and description != "Output":
                 status_console.print(f"[blue]{description}:[/blue]")
                 # Content always goes to stdout for piping/redirection
+                print(content)  # This was missing!
 
         if format == "tree":
             tree = Tree(f"📁 Hugo Project: {project_path.name}")

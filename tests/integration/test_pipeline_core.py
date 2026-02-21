@@ -29,8 +29,8 @@ class TestPipelineCore:
                 format="json",  # Changed from output_format
                 output_file=output_path,  # Now required
                 include_modules=False,
-                ignore_patterns=[],
                 show_progress=False,
+                less_verbose=False,
                 quiet=True,
                 verbose=False,
                 debug=False,
@@ -63,9 +63,7 @@ class TestPipelineCore:
             for template in expected_templates:
                 # Node IDs use full paths from layouts/
                 full_path = str(temp_hugo_project / "layouts" / template)
-                assert any(
-                    full_path in node_id for node_id in node_ids
-                ), f"Template {template} not found"
+                assert any(full_path in node_id for node_id in node_ids), f"Template {template} not found"
         finally:
             # Clean up
             if output_path.exists():
@@ -88,8 +86,8 @@ class TestPipelineCore:
                 format="json",
                 output_file=output_path,
                 include_modules=False,
-                ignore_patterns=[],
                 show_progress=False,
+                less_verbose=False,
                 quiet=True,
                 verbose=False,
                 debug=False,
@@ -102,21 +100,14 @@ class TestPipelineCore:
             # baseof.html should depend on head.html, header.html, footer.html
             baseof_edges = [edge for edge in edges if "baseof.html" in edge["source"]]
 
-            assert (
-                len(baseof_edges) >= 3
-            ), "baseof.html should have at least 3 dependencies"
+            assert len(baseof_edges) >= 3, "baseof.html should have at least 3 dependencies"
 
             # header.html should depend on components/navigation.html
             header_edges = [
-                edge
-                for edge in edges
-                if "header.html" in edge["source"]
-                and "navigation.html" in edge["target"]
+                edge for edge in edges if "header.html" in edge["source"] and "navigation.html" in edge["target"]
             ]
 
-            assert (
-                len(header_edges) >= 1
-            ), "header.html should depend on navigation.html"
+            assert len(header_edges) >= 1, "header.html should depend on navigation.html"
         finally:
             # Clean up
             if output_path.exists():
@@ -137,8 +128,8 @@ class TestPipelineCore:
                 format="json",
                 output_file=output_path,
                 include_modules=False,
-                ignore_patterns=[],
                 show_progress=False,
+                less_verbose=False,
                 quiet=True,
                 verbose=False,
                 debug=False,
@@ -180,8 +171,8 @@ class TestPipelineCore:
                 format="json",
                 output_file=output_path,
                 include_modules=False,
-                ignore_patterns=[],
                 show_progress=False,
+                less_verbose=False,
                 quiet=True,
                 verbose=False,
                 debug=False,
@@ -212,8 +203,8 @@ class TestPipelineCore:
                 format="json",
                 output_file=output_path,
                 include_modules=False,
-                ignore_patterns=[],
                 show_progress=False,
+                less_verbose=False,
                 quiet=True,
                 verbose=False,
                 debug=False,
