@@ -8,7 +8,7 @@
     {{ $image := resources.Get $src }}
     {{ if $image }}
         {{ $processed := $image.Resize "800x" }}
-        <img src="{{ $processed.RelPermalink }}" alt="{{ $alt }}" class="{{ $class }}" 
+        <img src="{{ $processed.RelPermalink }}" alt="{{ $alt }}" class="{{ $class }}"
              width="{{ $processed.Width }}" height="{{ $processed.Height }}" loading="lazy">
     {{ else }}
         <img src="{{ $src }}" alt="{{ $alt }}" class="{{ $class }}" loading="lazy">

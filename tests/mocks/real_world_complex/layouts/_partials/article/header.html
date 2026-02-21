@@ -1,10 +1,10 @@
 <header class="article-header style-{{ .style | default "standard" }}">
     <h1>{{ .context.Title }}</h1>
-    
+
     {{ if .showMeta }}
         {{ partial "meta/main.html" (dict "context" .context "metaStyle" "header" "showAll" true) }}
     {{ end }}
-    
+
     {{ if .context.Params.featured_image }}
         <div class="featured-image">
             <img src="{{ .context.Params.featured_image }}" alt="{{ .context.Title }}" loading="lazy">

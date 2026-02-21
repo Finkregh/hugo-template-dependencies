@@ -23,7 +23,7 @@ This directory contains pattern-based mock Hugo projects for testing the depende
 
 ### basic_partial_pattern
 
-**Purpose:** Test basic partial inclusion pattern  
+**Purpose:** Test basic partial inclusion pattern
 **Structure:**
 ```
 layouts/
@@ -46,7 +46,7 @@ layouts/
 
 ### nested_partial_chain
 
-**Purpose:** Test multi-level partial hierarchy  
+**Purpose:** Test multi-level partial hierarchy
 **Structure:**
 ```
 layouts/
@@ -76,7 +76,7 @@ index.html → layout/main.html → components/sidebar.html → widgets/navigati
 
 ### conditional_partials
 
-**Purpose:** Test dynamic partial selection with fallbacks  
+**Purpose:** Test dynamic partial selection with fallbacks
 **Structure:**
 ```
 layouts/
@@ -107,7 +107,7 @@ layouts/
 
 ### context_passing
 
-**Purpose:** Test complex context and data passing  
+**Purpose:** Test complex context and data passing
 **Structure:**
 ```
 layouts/
@@ -133,7 +133,7 @@ layouts/
 
 ### cached_partials
 
-**Purpose:** Test `partialCached` function calls  
+**Purpose:** Test `partialCached` function calls
 **Structure:**
 ```
 layouts/
@@ -158,7 +158,7 @@ layouts/
 
 ### template_blocks
 
-**Purpose:** Test block inheritance pattern  
+**Purpose:** Test block inheritance pattern
 **Structure:**
 ```
 layouts/_default/
@@ -186,7 +186,7 @@ layouts/_default/
 
 ### inline_partials
 
-**Purpose:** Test inline partial definitions  
+**Purpose:** Test inline partial definitions
 **Structure:**
 ```
 layouts/
@@ -212,7 +212,7 @@ layouts/
 
 ### function_integration
 
-**Purpose:** Test Hugo function usage in templates  
+**Purpose:** Test Hugo function usage in templates
 **Structure:**
 ```
 layouts/
@@ -239,7 +239,7 @@ layouts/
 
 ### shortcode_templates
 
-**Purpose:** Test shortcode patterns  
+**Purpose:** Test shortcode patterns
 **Structure:**
 ```
 layouts/
@@ -267,7 +267,7 @@ layouts/
 
 ### real_world_complex
 
-**Purpose:** Realistic Hugo site structure based on Blowfish theme  
+**Purpose:** Realistic Hugo site structure based on Blowfish theme
 **Structure:**
 ```
 layouts/
@@ -387,11 +387,11 @@ uv run python -m pytest tests/integration/test_complete_pipeline.py -v
 
 ### nested_partials_project (REMOVED)
 
-**Status:** ⚠️ Deprecated - Replaced by pattern-based mocks  
-**Reason:** Calendar-themed naming was domain-specific and didn't clearly indicate Hugo constructs being tested  
+**Status:** ⚠️ Deprecated - Replaced by pattern-based mocks
+**Reason:** Calendar-themed naming was domain-specific and didn't clearly indicate Hugo constructs being tested
 **Replacement:** Use `nested_partial_chain` for similar testing scenarios
 
 ---
 
-**Last Updated:** 2026-02-10  
+**Last Updated:** 2026-02-10
 **Maintainer:** Hugo Template Dependencies Project

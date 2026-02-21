@@ -4,22 +4,22 @@
         <h1>{{ printf "%s: %s" .Data.Singular .Title }}</h1>
         <p class="count">{{ printf "%d %s" (len .Data.Terms) (cond (gt (len .Data.Terms) 1) "items" "item") }}</p>
     </header>
-    
+
     <section class="terms">
         {{ $terms := slice }}
         {{ range $key, $value := .Data.Terms }}
             {{ $terms = $terms | append (dict "Name" $key "Count" $value.Count "URL" $value.RelPermalink) }}
         {{ end }}
-        
+
         {{ partial "term-links.html" (dict "terms" $terms "style" "grid" "showCount" true) }}
     </section>
-    
+
     <aside class="taxonomy-meta">
         {{ $totalPosts := 0 }}
         {{ range .Data.Terms }}
             {{ $totalPosts = add $totalPosts .Count }}
         {{ end }}
-        
+
         <div class="stats">
             {{ partial "badge.html" (dict "text" (printf "%d total posts" $totalPosts) "type" "info") }}
             {{ partial "badge.html" (dict "text" (printf "%d categories" (len .Data.Terms)) "type" "primary") }}

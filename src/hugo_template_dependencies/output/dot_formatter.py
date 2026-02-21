@@ -207,7 +207,11 @@ class DOTFormatter:
 
         return edges
 
-    def _get_subgraphs(self, *, include_styles: bool = True) -> list[list[str]]:  # noqa: PLR0912 needs_refactoring
+    def _get_subgraphs(  # noqa: PLR0912 needs_refactoring
+        self,
+        *,
+        include_styles: bool = True,
+    ) -> list[list[str]]:
         """Get formatted subgraph definitions by template directory and type.
 
         Args:

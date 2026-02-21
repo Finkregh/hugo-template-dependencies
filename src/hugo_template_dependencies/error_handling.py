@@ -571,7 +571,7 @@ class ErrorHandler:
             style = "bold red"
             title = "Critical Error"
         else:
-            icon = "ℹ️"
+            icon = "ℹ️"  # noqa: RUF001
             style = "white"
             title = "Info"
 

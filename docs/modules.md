@@ -1,1 +1,1 @@
-::: hugo_template_dependencies.foo
+::: hugo_template_dependencies

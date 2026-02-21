@@ -16,7 +16,9 @@ class TestCLIHelpers:
         from hugo_template_dependencies.cli import analyze
 
         # Create temporary files
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as output_file:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False
+        ) as output_file:
             output_path = Path(output_file.name)
 
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -83,7 +85,7 @@ class TestCLIHelpers:
             analyze(
                 project_path=temp_project,
                 format="json",
-                output_file=None,  # type: ignore[arg-type]  # type: ignore[arg-type]
+                output_file=None,  # type: ignore[arg-type]
                 include_modules=False,
                 show_progress=False,
                 less_verbose=False,
@@ -213,7 +215,9 @@ class TestCLIHelpers:
             from hugo_template_dependencies.cli import analyze
 
             # Use file output to avoid stdout capture complexity
-            with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as output_file:
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".json", delete=False
+            ) as output_file:
                 output_path = Path(output_file.name)
 
             try:

@@ -2,8 +2,8 @@
 <div class="article-meta meta-{{ .style }}">
     {{/* Author information with conditional display */}}
     {{ if and .showAuthor .context.Params.author }}
-        {{ partial "meta/author.html" (dict 
-            "author" .context.Params.author 
+        {{ partial "meta/author.html" (dict
+            "author" .context.Params.author
             "context" .context
             "showAvatar" (ne .style "minimal")
             "showBio" (eq .style "full")
@@ -12,7 +12,7 @@
 
     {{/* Publication and modification dates */}}
     {{ if .showDate }}
-        {{ partial "meta/published.html" (dict 
+        {{ partial "meta/published.html" (dict
             "context" .context
             "showModified" (and .context.Lastmod (ne .context.Date .context.Lastmod))
             "dateFormat" (.context.Site.Params.dateFormat | default "January 2, 2006")
@@ -28,8 +28,8 @@
 
     {{/* Tags and categories with shared icon component */}}
     {{ if and .showTags (or .context.Params.tags .context.Params.categories) }}
-        {{ partial "meta/tags.html" (dict 
-            "tags" .context.Params.tags 
+        {{ partial "meta/tags.html" (dict
+            "tags" .context.Params.tags
             "categories" .context.Params.categories
             "context" .context
             "useIcons" true

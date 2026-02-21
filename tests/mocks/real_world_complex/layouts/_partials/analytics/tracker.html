@@ -35,8 +35,8 @@
 
 {{/* Custom analytics implementation */}}
 {{ if .context.Site.Params.analytics.custom.enabled }}
-    {{ partial "analytics/events.html" (dict 
-        "event" $eventType 
+    {{ partial "analytics/events.html" (dict
+        "event" $eventType
         "data" $eventData
         "context" .context
     ) }}

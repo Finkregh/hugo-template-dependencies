@@ -274,7 +274,7 @@ class HugoConfigParser:
 
             # Replacement failed - fall through to regular module resolution
             logger.debug(
-                f"Replacement not resolved locally or in cache: {module_path_str} -> {replacement_path}. Attempting regular resolution.",
+                f"Replacement not resolved locally or in cache: {module_path_str} -> {replacement_path}. Attempting regular resolution.",  # noqa: E501
             )
 
         # No replacement - handle as regular module
@@ -295,7 +295,7 @@ class HugoConfigParser:
                         else original_path
                     )
                     logger.debug(
-                        f"  Found reverse replacement: {module_path_str} <- {original_path} (basename: {reverse_replacement_basename})",
+                        f"  Found reverse replacement: {module_path_str} <- {original_path} (basename: {reverse_replacement_basename})",  # noqa: E501
                     )
                     break
 
