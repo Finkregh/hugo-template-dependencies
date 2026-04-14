@@ -39,7 +39,7 @@ hugo-template-dependencies = "hugo_template_dependencies.cli:app"
 
 [dependency-groups]
 dev = [
-    "pytest>=9.0.2",
+    "pytest>=9.0.3",
     "pre-commit>=4.5.1",
     "nox>=2024.4.15",
     "deptry>=0.24.0",
